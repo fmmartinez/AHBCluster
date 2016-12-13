@@ -1,0 +1,11 @@
+*.swp
+*.mod
+*.o
+*.x
+*.out
+*.xyz
+*.o*
+*.e*
+fort.*
+test*/
+run*/
