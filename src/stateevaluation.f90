@@ -3,6 +3,30 @@ use definitions
 
 contains
 
+subroutine get_force_field_pair_parameters(atoms,pairs)
+implicit none
+   
+   integer :: i,j,n
+
+   type(Atom),dimension(:),intent(in) :: atoms
+   type(AtomPairData),dimension(:,:),intent(inout) :: pairs
+   
+   n = size(atoms)
+
+   do i = 1, n-1
+      do j = i+1, n
+         pairs(i,j)%qq = atoms(i)%charge*atoms(j)%charge
+         pairs(j,i)%qq = pairs(i,j)%qq
+
+         pairs(i,j)%ljEps = sqrt(atoms(i)%ljEpsilon*atoms(j)%ljEpsilon)
+         pairs(j,i)%ljEps = pairs(i,j)%ljEps
+
+         pairs(i,j)%ljSig = (atoms(i)%ljSigma + atoms(j)%ljSigma)/2d0
+         pairs(j,i)%ljSig = pairs(i,j)%ljSig
+      end do
+   end do
+end subroutine get_force_field_pair_parameters
+
 subroutine get_distances_and_vectors(atoms,pairs)
 implicit none
    
@@ -36,18 +60,30 @@ implicit none
    end do
 end subroutine get_distances_and_vectors
 
-subroutine update_charges_in_complex(atoms,pairs)
+subroutine update_charges_in_complex_and_pairs(atoms,pairs)
 implicit none
    
+   integer :: i,j,n
+
    real(8) :: rah, fr
-   type(Atom),dimension(:),intent(inout) :: atoms
-   type(AtomPairData),dimension(:,:),intent(in) :: pairs
    
+   type(Atom),dimension(:),intent(inout) :: atoms
+   type(AtomPairData),dimension(:,:),intent(inout) :: pairs
+   
+   n = size(atoms)
+
    rah = pairs(1,3)%rij
    fr = 0.5d0*(1d0 + (rah - 1.43d0)/sqrt((rah-1.43d0)**2+0.125d0**2))
    atoms(1)%charge = (1d0-fr)*(-0.5d0)+fr*(-1d0)
    atoms(2)%charge = fr*(0.5d0)
 
-end subroutine update_charges_in_complex
+   do i = 1, 2
+      do j = 4, n
+         pairs(i,j)%qq = atoms(i)%charge*atoms(j)%charge
+         pairs(j,i)%qq = pairs(i,j)%qq
+      end do
+   end do
+
+end subroutine update_charges_in_complex_and_pairs
 
 end module stateevaluation
