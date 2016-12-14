@@ -10,7 +10,7 @@ type Atom
 end type Atom
 
 type AtomPairData
-   real(8) :: rij
+   real(8) :: rij,qq,ljEps,ljSig
    real(8),dimension(1:3) :: vectorij
 end type AtomPairData
 
