@@ -21,16 +21,24 @@ subroutine get_all_forces(pairs,force)
       end do
    end do
 
-   do i = 1, n-1
+   do i = 1, 3
       do j = i+1, n
          if (i==1.and.j==2) force%atomPair(i,j) = get_AB_force(pairs(i,j)%rij)
          if (i==1.and.j==3) force%atomPair(i,j) = get_AH_force(pairs(i,j)%rij)
-         !if (i==1.and.j>3) force%atomPair(i,j) = get_AS_force()
+         if (i==1.and.j>3) force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
          if (i==2.and.j==3) force%atomPair(i,j) = get_BH_force(pairs(i,j)%rij)
-         !if (i==2.and.j>3) force%atomPair(i,j) = get_BS_force()
-         !if (i==3.and.j>3) force%atomPair(i,j) = get_SS_force()
+         if (i==2.and.j>3) force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+         if (i==3.and.j>3) force%atomPair(i,j) = get_HS_force(pairs(i,j)%qq,pairs(i,j)%rij)
          force%atomPair(j,i) = force%atomPair(i,j)
       end do 
+   end do
+   do i = 4, n-1, 2
+      force%atomPair(i,i+1) = get_SS_bond_force(pairs(i,i+1)%rij)
+      force%atomPair(i+1,i) = force%atomPair(i,i+1)
+      do j = i+2, n
+         force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+         force%atomPair(j,i) = force%atomPair(i,j)
+      end do
    end do
    
    do i = 1, n
@@ -45,6 +53,35 @@ subroutine get_all_forces(pairs,force)
    end do
 
 end subroutine get_all_forces
+
+function get_SS_bond_force(rij) result (f)
+implicit none
+   real(8),parameter :: kBond = 150d0   
+
+   real(8) :: f
+   real(8),intent(in) :: rij
+   
+   f = -2d0*kBond*(rij - 1.781d0)
+
+end function get_SS_bond_force
+
+function get_HS_force(qq,r) result (f)
+implicit none
+   real(8) :: f
+   real(8),intent(in) :: qq,r
+
+   f = kCoulomb*qq/r**2
+
+end function get_HS_force
+
+function get_ljelec_force(eps,sig,qq,r) result(f)
+implicit none
+   real(8) :: f
+   real(8),intent(in) :: eps,sig,qq,r
+
+   f = 24d0*eps*(2d0*sig**12/r**13 - sig**6/r**7) + kCoulomb*qq/r**2
+
+end function get_ljelec_force
 
 function get_BH_force(rbh) result(f)
 implicit none
