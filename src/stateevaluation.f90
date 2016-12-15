@@ -86,4 +86,28 @@ implicit none
 
 end subroutine update_charges_in_complex_and_pairs
 
+subroutine remove_CoM_movement(atoms)
+implicit none
+   
+   integer :: i,n
+   real(8) :: totalMass
+   real(8),dimension(1:3) :: CoMVel
+
+   type(Atom),dimension(:),intent(inout) :: atoms
+   
+   n = size(atoms)
+
+   totalMass = sum(atoms(1:n)%mass)
+
+   CoMVel = [0d0,0d0,0d0]
+   do i = 1, n
+      CoMVel = CoMVel + atoms(i)%mass*atoms(i)%vel/totalMass
+   end do
+
+   do i = 1, n
+      atoms(i)%vel = atoms(i)%vel - CoMVel/n
+   end do
+
+end subroutine remove_CoM_movement
+
 end module stateevaluation
