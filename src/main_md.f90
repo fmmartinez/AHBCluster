@@ -26,7 +26,7 @@ type(vsl_stream_state) :: stream
 seed = 2
 errcode = vslnewstream(stream,brng,seed)
 
-nAtoms = 43 !cluster 3, solvent 9x2
+nAtoms = 203 !cluster 3, solvent 9x2
 mdspecs%timeStep = 0.001d0
 mdspecs%halfTimeStep = mdspecs%timeStep/2d0
 tempInK = 10
@@ -37,7 +37,8 @@ allocate(atomPairs(1:nAtoms,1:nAtoms),atomPairs_old(1:nAtoms,1:nAtoms))
 allocate(force%inAtom(1:nAtoms),force_old%inAtom(1:nAtoms))
 allocate(force%atomPair(1:nAtoms,1:nAtoms),force_old%atomPair(1:nAtoms,1:nAtoms))
 
-call read_force_field_file(cluster)
+!call read_force_field_file(cluster)
+call initialize_force_field_explicit_H(cluster)
 !call read_config_in_XYZ_file(cluster)
 call generate_positions(cluster)
 call generate_velocities(cluster,stream,tempInK)
