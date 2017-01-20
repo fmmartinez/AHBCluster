@@ -98,25 +98,6 @@ do while (i <= 375000)
       call do_velocity_rescale(cluster,tempInK)
    end if
 
-   !do j = 1, nAtoms
-   !   cluster(j)%vel = cluster(j)%vel + forceToVelUnits*halfTimeStep*force%inAtom(j)%total/cluster(j)%mass
-   !end do
-   !
-   !do j = 1, nAtoms
-   !   cluster(j)%pos = cluster(j)%pos + timeStep*cluster(j)%vel
-   !end do
-
-   !!positions changed update positions and vectors
-   !call get_distances_and_vectors(cluster,atomPairs)
-
-   !call update_charges_in_complex_and_pairs(cluster,atomPairs)
-   !
-   !!get force
-   !call get_all_forces(atomPairs,force)
-
-   !do j = 1, nAtoms
-   !   cluster(j)%vel = cluster(j)%vel + forceToVelUnits*halfTimeStep*force%inAtom(j)%total/cluster(j)%mass
-   !end do
    call velocity_verlet_int_one_timestep(cluster,atomPairs,force,mdspecs)
    i = i + 1
 
