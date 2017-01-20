@@ -115,4 +115,22 @@ implicit none
    close(unit1)
 end subroutine write_equilibration_trajectory
 
+subroutine write_production_trajectory(at,i)
+implicit none
+   integer,intent(in) :: i
+   type(atom),dimension(:),intent(in) :: at
+   
+   integer :: unit1,nAtoms,j
+
+   nAtoms = size(at)
+   
+   open(newunit=unit1,file='trajectory-pd.xyz',position='append')
+   write(unit1,*) nAtoms
+   write(unit1,*) 'symbol - positions x y z --',i
+   do j = 1, nAtoms
+      write(unit1,'(a4,3f14.8)') at(j)%symbol, at(j)%pos(1:3)
+   end do
+   close(unit1)
+end subroutine write_production_trajectory
+
 end module ioroutines
