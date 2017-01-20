@@ -164,13 +164,13 @@ implicit none
 
    do j = 1, nAtoms
       cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
-   end do
-   
-   do j = 1, nAtoms
       cluster(j)%pos = cluster(j)%pos + dt*cluster(j)%vel
    end do
-
-   !positions changed update positions and vectors
+   
+   !positions changed update positions and vectors, apply constraints and update
+   !again
+   call get_distances_and_vectors(cluster,atomPairs)
+   call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
 
    call update_charges_in_complex_and_pairs(cluster,atomPairs)
@@ -181,6 +181,8 @@ implicit none
    do j = 1, nAtoms
       cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
    end do
+
+   call do_rattle(cluster,atomPairs,mdspecs)
 end subroutine velocity_verlet_int_one_timestep
 
 subroutine do_shake(at,pair,md)

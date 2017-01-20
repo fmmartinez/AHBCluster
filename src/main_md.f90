@@ -49,6 +49,8 @@ md%stepFreqVelRescale = 20
 
 md%prodSteps = 400000
 
+md%nBondConstraints = (nAtoms-3)/2
+
 allocate(cluster(1:nAtoms),cluster_old(1:nAtoms))
 allocate(atomPairs(1:nAtoms,1:nAtoms),atomPairs_old(1:nAtoms,1:nAtoms))
 
