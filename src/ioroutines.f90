@@ -80,4 +80,20 @@ implicit none
 
 end subroutine read_config_in_XYZ_file
 
+subroutine write_generated_initial_positions_XYZ(at)
+implicit none
+   
+   integer :: unit1,nAtoms,j
+
+   nAtoms = size(at)
+
+   open(newunit=unit1,file='ini_generated.xyz')
+   write(unit1,*) nAtoms
+   write(unit1,*) 'symbol - positions x y z -- intial config'
+   do j = 1, nAtoms
+      write(unit1,'(a4,3f14.8)') at(j)%symbol, at(j)%pos(1:3)
+   end do
+   close(unit1)
+end subroutine write_generated_initial_positions_XYZ
+
 end module ioroutines
