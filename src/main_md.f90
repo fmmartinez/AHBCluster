@@ -26,7 +26,7 @@ type(vsl_stream_state) :: stream
 seed = 2
 errcode = vslnewstream(stream,brng,seed)
 
-nAtoms = 203 !cluster 3, solvent 9x2
+nAtoms = 17 !cluster 3, solvent 9x2
 mdspecs%timeStep = 0.001d0
 mdspecs%halfTimeStep = mdspecs%timeStep/2d0
 tempInK = 10
@@ -94,8 +94,8 @@ do while (i <= 375000)
       call generate_velocities(cluster,stream,tempInK)
    end if
 
+   call remove_CoM_movement(cluster)
    if (mod(i,(i/37500+1)*10) == 0) then
-      call remove_CoM_movement(cluster)
       call do_velocity_rescale(cluster,tempInK)
    end if
 
