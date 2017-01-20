@@ -1,4 +1,8 @@
+include 'mkl_vsl.f90'
+
 module definitions
+use mkl_vsl_type
+use mkl_vsl
 implicit none
 
 type Atom
@@ -23,11 +27,21 @@ type Forces
    real(8),dimension(:,:),allocatable :: atomPair
 end type Forces
 
+type MdData
+   real(8) :: timeStep, halfTimeStep
+end type MdData
+
+integer,parameter :: brng = VSL_BRNG_MT2203
+integer,parameter :: method = VSL_RNG_METHOD_GAUSSIAN_BOXMULLER
+
 real(8),parameter :: a = 11.2d0, b = 7.1d13, d = 110d0
 real(8),parameter :: na = 9.26d0, da = 0.95d0
 real(8),parameter :: nb = 11.42d0, db = 0.97d0
 real(8),parameter :: c = 0.776d0
 
 real(8),parameter :: forceToVelUnits = 418.4d0, kCoulomb = 332.06d0
-
+real(8),parameter :: kBoltzmann = 0.831446d0
+   !Boltzmann constant in amu*(A/ps)**2*K
+real(8),parameter :: KtoKcalMol = 0.00239d0
+   !units of (Kcal/mol)*(ps**2/A**2)/amu
 end module definitions

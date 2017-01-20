@@ -1,173 +1,148 @@
 program clustermd
+use definitions
+use mkl_vsl_type
+use mkl_vsl
+use ioroutines
+use dynamicsroutines
+use stateevaluation
+use energycalculation
+use forcecalculation
 implicit none
 
-type Atom
-   character(4) :: symbol
-   real(8) :: mass,charge,ljSigma,ljEpsilon
-   !mass in uma, charge in e, ljSigma in A, ljEpsilon in Kcal/mol
-   real(8),dimension(1:3) :: pos,vel
-   !positions in A, velocities in A/ps 
-end type Atom
 
-type ForceInAtom
-   real(8),dimension(1:3) :: total
-end type ForceInAtom
+integer :: i,i_old,j,unit1,nAtoms,seed,errcode,try
 
-real(8),parameter :: a = 11.2d0, b = 7.1d13, d = 110d0
-real(8),parameter :: na = 9.26d0, da = 0.95d0
-real(8),parameter :: nb = 11.42d0, db = 0.97d0
-real(8),parameter :: c = 0.776d0
-real(8),parameter :: forceToVelUnits = 418.4d0, kCoulomb = 332.06d0
+real(8) :: f1,f2,f3,f4,fr,rah,rab,rbh,totalEnergy,dcscoms
+real(8) :: totalp,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy,totalKinEnergy
+real(8) :: tempInK,tempInK_old
+real(8),dimension(1:3) :: uvah,uvab,uvhb,fa,fb,fh
 
-integer :: i,j,unit1
+type(Atom),dimension(:),allocatable :: cluster,cluster_old
+type(Forces) :: force, force_old
+type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_old
+type(MdData) :: mdspecs
+type(vsl_stream_state) :: stream
 
-real(8) :: f1,f2,f3,f4,fr,rah,rab,rbh,totalEnergy
-real(8) :: timeStep,halfTimeStep
-real(8),dimension(1:3) :: uvah,uvab,uvhb
+seed = 2
+errcode = vslnewstream(stream,brng,seed)
 
-type(Atom),dimension(1:3) :: abcomplex
-type(ForceInAtom),dimension(1:3) :: force
+nAtoms = 43 !cluster 3, solvent 9x2
+mdspecs%timeStep = 0.001d0
+mdspecs%halfTimeStep = mdspecs%timeStep/2d0
+tempInK = 10
 
-timeStep = 0.0015d0
-halfTimeStep = timeStep/2d0
+allocate(cluster(1:nAtoms),cluster_old(1:nAtoms))
+allocate(atomPairs(1:nAtoms,1:nAtoms),atomPairs_old(1:nAtoms,1:nAtoms))
 
-!initialization
-abcomplex(1)%symbol = 'O'
-abcomplex(1)%mass = 93d0
-abcomplex(1)%charge = 0d0
-abcomplex(1)%ljSigma = 3.5d0
-abcomplex(1)%ljEpsilon = 0.397d0
-abcomplex(1)%pos = [1d0,1d0,1d0]
-abcomplex(1)%vel = [0d0,0d0,0d0]
+allocate(force%inAtom(1:nAtoms),force_old%inAtom(1:nAtoms))
+allocate(force%atomPair(1:nAtoms,1:nAtoms),force_old%atomPair(1:nAtoms,1:nAtoms))
 
-abcomplex(2)%symbol = 'N'
-abcomplex(2)%mass = 59d0
-abcomplex(2)%charge = 0d0
-abcomplex(2)%ljSigma = 3.5d0
-abcomplex(2)%ljEpsilon = 0.397d0
-abcomplex(2)%pos = [3.7d0,1d0,1d0]
-abcomplex(2)%vel = [0d0,0d0,0d0]
+call read_force_field_file(cluster)
+!call read_config_in_XYZ_file(cluster)
+call generate_positions(cluster)
+call generate_velocities(cluster,stream,tempInK)
+call remove_CoM_movement(cluster)
 
-abcomplex(3)%symbol = 'H'
-abcomplex(3)%mass = 1d0
-abcomplex(3)%charge = 0.5d0
-abcomplex(3)%ljSigma = 0d0
-abcomplex(3)%ljEpsilon = 0d0
-abcomplex(3)%pos = [2d0,1d0,1d0]
-abcomplex(3)%vel = [5.0d0,0d0,0d0]
+!get distances and vectors in all atoms
+call get_distances_and_vectors(cluster,atomPairs)
+call get_force_field_pair_parameters(cluster,atomPairs)
 
-force(1)%total = [0d0,0d0,0d0]
-force(2)%total = [0d0,0d0,0d0]
-force(3)%total = [0d0,0d0,0d0]
+call update_charges_in_complex_and_pairs(cluster,atomPairs)
 
-!get force
-rab = sqrt(sum((abcomplex(2)%pos - abcomplex(1)%pos)**2))
-rah = sqrt(sum((abcomplex(3)%pos - abcomplex(1)%pos)**2))
-rbh = sqrt(sum((abcomplex(3)%pos - abcomplex(2)%pos)**2))
-!update charges
-fr = 0.5d0*(1d0 + (rah - 1.43d0)/sqrt((rah-1.43d0)**2+0.125d0**2))
-abcomplex(1)%charge = (1d0-fr)*(-0.5d0)+fr*(-1d0)
-abcomplex(2)%charge = fr*(0.5d0)
-!covalent forces in complex
-f1 = (a*b)*exp(-a*rab)
-f2 = c*d*exp(-nb*(rbh-db)**2/(2d0*rbh))*(nb*(rbh-db)/rbh)*((rbh-db)/(2d0*rbh)-1d0)
-f3 =   d*exp(-na*(rah-da)**2/(2d0*rah))*(na*(rah-da)/rah)*((rah-da)/(2d0*rah)-1d0)
-!electrostatic forces in complex
-f4 = kCoulomb*abcomplex(1)%charge*abcomplex(2)%charge/rab**2
-!vectorization
-uvab = (abcomplex(2)%pos - abcomplex(1)%pos)/rab
-uvah = (abcomplex(3)%pos - abcomplex(1)%pos)/rah
-uvhb = (abcomplex(2)%pos - abcomplex(3)%pos)/rbh
-force(1)%total = -f1*uvab - f3*uvah
-force(2)%total =  f1*uvab + f2*uvhb
-force(3)%total = -f2*uvhb + f3*uvah
+call get_all_forces(atomPairs,force)
 
-!rab = 2.7d0
-!do i = 1, 31
-!   rah = rab*(i-1)/30d0
-!  
-!   f1 = (a*b)*exp(-a*rab)
-!   f2 = c*d*exp(-nb*(rab-rah-db)**2/(2d0*(rab-rah)))*(nb*(rab-rah-db)/(rab-rah))*((rab-rah-db)/(2d0*(rab-rah))-1d0)
-!   f3 = d*exp(-na*(rah-da)**2/(2d0*rah))*(na*(rah-da)/rah)*((rah-da)/(2d0*rah)-1d0)
-!  
-!   fvec = (abcomplex(2)%pos - abcomplex(1)%pos)/rab
-!   force(3)%total = ( f2 + f3)*fvec
-!   
-!   write (222,'(4f26.8)') rah,force(3)%total
-!   
-!   totalEnergy = b*exp(-a*rab)+d*(1-exp(-(na*(rah-da)**2)/(2d0*rah)))+c*d*(1-exp(-nb*(rab-rah-db)**2/(2d0*(rab-rah))))
-!  
-!   write (333,'(5f26.8)') rah,f1,f2,f3,totalEnergy
-!end do
-!
-!rah = 1d0
-!do i = 1, 31
-!   rab = 2.70d0*(i-1)/30d0 + 1d0
-!  
-!   f1 = (a*b)*exp(-a*rab)
-!   f2 = c*d*exp(-nb*(rab-rah-db)**2/(2d0*(rab-rah)))*(nb*(rab-rah-db)/(rab-rah))*((rab-rah-db)/(2d0*(rab-rah))-1d0)
-!   f3 = d*exp(-na*(rah-da)**2/(2d0*rah))*(na*(rah-da)/rah)*((rah-da)/(2d0*rah)-1d0)
-!  
-!   fvec = (abcomplex(2)%pos - abcomplex(1)%pos)/rab
-!   force(3)%total = ( f2 + f3)*fvec
-!   
-!   write (222,'(4f26.8)') rah,force(3)%total
-!   
-!   totalEnergy = b*exp(-a*rab)+d*(1-exp(-(na*(rah-da)**2)/(2d0*rah)))+c*d*(1-exp(-nb*(rab-rah-db)**2/(2d0*(rab-rah))))
-!  
-!   write (444,'(5f26.8)') rab,f1,f2,f3,totalEnergy
-!end do
-!stop
+dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
 
-do i = 1, 100000
-   abcomplex(1)%vel = abcomplex(1)%vel + forceToVelUnits*halfTimeStep*force(1)%total/abcomplex(1)%mass
-   abcomplex(2)%vel = abcomplex(2)%vel + forceToVelUnits*halfTimeStep*force(2)%total/abcomplex(2)%mass
-   abcomplex(3)%vel = abcomplex(3)%vel + forceToVelUnits*halfTimeStep*force(3)%total/abcomplex(3)%mass
+open(newunit=unit1,file='ini_generated.xyz')
+write(unit1,*) nAtoms
+write(unit1,*) 'symbol - positions x y z --',i
+do j = 1, nAtoms
+   write(unit1,'(a4,3f14.8)') cluster(j)%symbol, cluster(j)%pos(1:3)
+end do
+close(unit1)
 
-   abcomplex(1)%pos = abcomplex(1)%pos + timeStep*abcomplex(1)%vel
-   abcomplex(2)%pos = abcomplex(2)%pos + timeStep*abcomplex(2)%vel
-   abcomplex(3)%pos = abcomplex(3)%pos + timeStep*abcomplex(3)%vel
+cluster_old = cluster
+atomPairs_old = atomPairs
+force_old = force
+tempInK_old = tempInK
 
-   !get force
-   rab = sqrt(sum((abcomplex(2)%pos - abcomplex(1)%pos)**2))
-   rah = sqrt(sum((abcomplex(3)%pos - abcomplex(1)%pos)**2))
-   rbh = sqrt(sum((abcomplex(3)%pos - abcomplex(2)%pos)**2))
-   !update charges
-   fr = 0.5d0*(1d0 + (rah - 1.43d0)/sqrt((rah-1.43d0)**2+0.125d0**2))
-   abcomplex(1)%charge = (1d0-fr)*(-0.5d0)+fr*(-1d0)
-   abcomplex(2)%charge = fr*(0.5d0)
-   !covalent forces in complex
-   f1 = (a*b)*exp(-a*rab)
-   f2 = c*d*exp(-nb*(rbh-db)**2/(2d0*rbh))*(nb*(rbh-db)/rbh)*((rbh-db)/(2d0*rbh)-1d0)
-   f3 =   d*exp(-na*(rah-da)**2/(2d0*rah))*(na*(rah-da)/rah)*((rah-da)/(2d0*rah)-1d0)
-   !electrostatic forces in complex
-   f4 = kCoulomb*abcomplex(1)%charge*abcomplex(2)%charge/rab**2
-   !vectorization
-   uvab = (abcomplex(2)%pos - abcomplex(1)%pos)/rab
-   uvah = (abcomplex(3)%pos - abcomplex(1)%pos)/rah
-   uvhb = (abcomplex(2)%pos - abcomplex(3)%pos)/rbh
-   force(1)%total = -f1*uvab - f3*uvah
-   force(2)%total =  f1*uvab + f2*uvhb
-   force(3)%total = -f2*uvhb + f3*uvah
+try = 1
+i = 1
 
-   abcomplex(1)%vel = abcomplex(1)%vel + forceToVelUnits*halfTimeStep*force(1)%total/abcomplex(1)%mass
-   abcomplex(2)%vel = abcomplex(2)%vel + forceToVelUnits*halfTimeStep*force(2)%total/abcomplex(2)%mass
-   abcomplex(3)%vel = abcomplex(3)%vel + forceToVelUnits*halfTimeStep*force(3)%total/abcomplex(3)%mass
+i_old = i
 
-   if (mod(i,100) == 0) then
-      open(newunit=unit1,file='trajectory.xyz',position='append')
-      write(unit1,*) 3
-      write(unit1,*) 'symbol - positions x y z'
-      do j = 1, 3
-         write(unit1,'(a4,3f14.8)') abcomplex(j)%symbol, abcomplex(j)%pos(1:3)
-      end do
-      close(unit1)
-      write(222,'(i6,3f24.10)') i, abcomplex(3)%vel
-      write(333,'(i6,3f24.10)') i, force(3)%total
+do while (i <= 375000)
+
+   tempInK = 10d0 + (i/37500)*14
+   
+   if (mod(i,37500) == 0) then
+      cluster_old = cluster
+      atomPairs_old = atomPairs
+      force_old = force
+      i_old = i
    end if
 
-   totalEnergy = b*exp(-a*rab)+d*(1-exp(-(na*(rah-da)**2)/(2d0*rah)))+c*d*(1-exp(-nb*(rbh-db)**2/(2d0*rbh)))
-   write(111,*) i, rab, totalEnergy
+   if (dcscoms > 7d0) then
+      cluster = cluster_old
+      atomPairs = atomPairs_old
+      force = force_old
+      print *, try, 'failed at', i
+      i = i_old
+      try = try + 1
+      print *, 'restart', try
+      call generate_velocities(cluster,stream,tempInK)
+   end if
+
+   if (mod(i,(i/37500+1)*10) == 0) then
+      call remove_CoM_movement(cluster)
+      call do_velocity_rescale(cluster,tempInK)
+   end if
+
+   !do j = 1, nAtoms
+   !   cluster(j)%vel = cluster(j)%vel + forceToVelUnits*halfTimeStep*force%inAtom(j)%total/cluster(j)%mass
+   !end do
+   !
+   !do j = 1, nAtoms
+   !   cluster(j)%pos = cluster(j)%pos + timeStep*cluster(j)%vel
+   !end do
+
+   !!positions changed update positions and vectors
+   !call get_distances_and_vectors(cluster,atomPairs)
+
+   !call update_charges_in_complex_and_pairs(cluster,atomPairs)
+   !
+   !!get force
+   !call get_all_forces(atomPairs,force)
+
+   !do j = 1, nAtoms
+   !   cluster(j)%vel = cluster(j)%vel + forceToVelUnits*halfTimeStep*force%inAtom(j)%total/cluster(j)%mass
+   !end do
+   call velocity_verlet_int_one_timestep(cluster,atomPairs,force,mdspecs)
+   i = i + 1
+
+   if (mod(i,250) == 0) then
+      open(newunit=unit1,file='trajectory.xyz',position='append')
+      write(unit1,*) nAtoms
+      write(unit1,*) 'symbol - positions x y z --',i
+      do j = 1, nAtoms
+         write(unit1,'(a4,3f14.8)') cluster(j)%symbol, cluster(j)%pos(1:3)
+      end do
+      close(unit1)
+   end if
+
+   call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+   totalKinEnergy = get_kinetic_energy(cluster)
+   totalEnergy = totalKinEnergy + totalPotEnergy
+   
+   dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+   totalp = get_total_momentum_magnitude(cluster)
+   write(111,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+                              dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
+                              totalPotEnergy,totalKinEnergy,&
+                              totalEnergy, totalp
+   if (try == 10) exit
 end do
+
+if (try == 10) print *, 'stopped after 10 tries'
 
 end program clustermd

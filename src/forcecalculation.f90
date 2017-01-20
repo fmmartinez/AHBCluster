@@ -21,23 +21,40 @@ subroutine get_all_forces(pairs,force)
       end do
    end do
 
-   do i = 1, 3
-      do j = i+1, n
-         if (i==1.and.j==2) force%atomPair(i,j) = get_AB_force(pairs(i,j)%rij)
-         if (i==1.and.j==3) force%atomPair(i,j) = get_AH_force(pairs(i,j)%rij)
-         if (i==1.and.j>3) force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
-         if (i==2.and.j==3) force%atomPair(i,j) = get_BH_force(pairs(i,j)%rij)
-         if (i==2.and.j>3) force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
-         if (i==3.and.j>3) force%atomPair(i,j) = get_HS_force(pairs(i,j)%qq,pairs(i,j)%rij)
-         force%atomPair(j,i) = force%atomPair(i,j)
-      end do 
+   !complex forces   
+   force%atomPair(1,2) = get_AB_force(pairs(1,2)%rij)
+   force%atomPair(2,1) = force%atomPair(1,2)
+
+   force%atomPair(1,3) = get_AH_force(pairs(1,3)%rij)
+   force%atomPair(3,1) = force%atomPair(1,3)
+   
+   force%atomPair(2,3) = get_BH_force(pairs(2,3)%rij)
+   force%atomPair(3,2) = force%atomPair(2,3)
+   
+   !AHB vs S
+   do j = 4, n
+      i = 1
+      force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+      force%atomPair(j,i) = force%atomPair(i,j)
+      
+      i = 2
+      force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+      force%atomPair(j,i) = force%atomPair(i,j)
+      
+      i = 3
+      force%atomPair(i,j) = get_HS_force(pairs(i,j)%qq,pairs(i,j)%rij)
+      force%atomPair(j,i) = force%atomPair(i,j)
    end do
+   
+   !S vs S
    do i = 4, n-1, 2
       force%atomPair(i,i+1) = get_SS_bond_force(pairs(i,i+1)%rij)
       force%atomPair(i+1,i) = force%atomPair(i,i+1)
       do j = i+2, n
          force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+         force%atomPair(i+1,j) = get_ljelec_force(pairs(i+1,j)%ljEps,pairs(i+1,j)%ljSig,pairs(i+1,j)%qq,pairs(i+1,j)%rij)
          force%atomPair(j,i) = force%atomPair(i,j)
+         force%atomPair(j,i+1) = force%atomPair(i+1,j)
       end do
    end do
    
