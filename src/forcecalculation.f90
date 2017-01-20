@@ -78,8 +78,8 @@ implicit none
    real(8) :: f
    real(8),intent(in) :: rij
    
-   f = -2d0*kBond*(rij - 1.781d0)
-
+   !f = -2d0*kBond*(rij - 1.781d0)
+   f = 0d0
 end function get_SS_bond_force
 
 function get_HS_force(qq,r) result (f)
