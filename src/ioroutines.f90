@@ -82,6 +82,7 @@ end subroutine read_config_in_XYZ_file
 
 subroutine write_generated_initial_positions_XYZ(at)
 implicit none
+   type(atom),dimension(:),intent(in) :: at
    
    integer :: unit1,nAtoms,j
 
@@ -95,5 +96,23 @@ implicit none
    end do
    close(unit1)
 end subroutine write_generated_initial_positions_XYZ
+
+subroutine write_equilibration_trajectory(at,i)
+implicit none
+   integer,intent(in) :: i
+   type(atom),dimension(:),intent(in) :: at
+   
+   integer :: unit1,nAtoms,j
+
+   nAtoms = size(at)
+   
+   open(newunit=unit1,file='trajectory-eq.xyz',position='append')
+   write(unit1,*) nAtoms
+   write(unit1,*) 'symbol - positions x y z --',i
+   do j = 1, nAtoms
+      write(unit1,'(a4,3f14.8)') at(j)%symbol, at(j)%pos(1:3)
+   end do
+   close(unit1)
+end subroutine write_equilibration_trajectory
 
 end module ioroutines
