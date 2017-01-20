@@ -366,4 +366,15 @@ function get_total_momentum_magnitude(at) result (p)
    p = sqrt(sum(pVec**2))
    end function get_total_momentum_magnitude
 
+function get_insta_temperature(k,nAtoms) result(t)
+implicit none
+   integer :: nAtoms
+   real(8),intent(in) :: k
+
+   real(8) :: t
+
+   t = (2d0/(3d0*nAtoms))*k/ktoKcalMol
+   t = t/kBoltzmann
+end function get_insta_temperature
+
 end module stateevaluation
