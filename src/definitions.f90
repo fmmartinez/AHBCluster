@@ -28,7 +28,11 @@ type Forces
 end type Forces
 
 type MdData
+   integer :: seed, eqSteps, stepFreqEqSave, stepFreqOutTrajectory
+   integer :: maxEqTries, eqPhases, eqPhaseSteps
+   integer :: stepFreqVelRescale
    real(8) :: timeStep, halfTimeStep
+   real(8) :: initialEqTempInK, targetTempInK
 end type MdData
 
 integer,parameter :: brng = VSL_BRNG_MT2203
