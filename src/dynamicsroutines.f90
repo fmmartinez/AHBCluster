@@ -197,7 +197,7 @@ implicit none
    real(8),dimension(:,:),allocatable :: originalBondVec,at_temp
 
    allocate(originalBondVec(1:md%nBondConstraints,1:3))
-   allocate(at_temp(1:md%nBondConstraints,1:3))
+   allocate(at_temp(1:md%nBondConstraints*2,1:3))
 
    do i = 1, md%nBondConstraints
       ai = 3 + (i-1)*2
