@@ -4,6 +4,39 @@ implicit none
 
 contains
 
+subroutine read_md_input_file(n,md)
+implicit none
+   integer,intent(inout) :: n
+   type(MdData),intent(inout) :: md
+
+   integer :: unit1
+
+   open(newunit=unit1,file='md.in')
+      read(unit1,*)
+      read(unit1,*) n
+      read(unit1,*)
+      read(unit1,*) md%seed
+      read(unit1,*)
+      read(unit1,*) md%timeStep
+      read(unit1,*)
+      read(unit1,*) md%eqSteps,md%maxEqTries,md%eqPhases,md%stepFreqEqSave
+      read(unit1,*)
+      read(unit1,*) md%initialEqTempInK,md%targetTempInK
+      read(unit1,*)
+      read(unit1,*) md%prodSteps
+      read(unit1,*)
+      read(unit1,*) md%stepFreqVelRescale,md%stepFreqCoMRemoval
+      read(unit1,*)
+      read(unit1,*) md%stepFreqOutTrajectory
+   close(unit1)
+   
+   md%halfTimeStep = md%timeStep/2d0
+
+   md%eqPhaseSteps = md%eqSteps/md%eqPhases
+
+   md%nBondConstraints = (n-3)/2
+end subroutine read_md_input_file
+
 subroutine read_force_field_file(at)
 implicit none
    type(atom),dimension(:),intent(inout) :: at
