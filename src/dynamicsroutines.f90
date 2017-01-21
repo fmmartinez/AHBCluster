@@ -119,6 +119,7 @@ implicit none
       call remove_CoM_movement(cluster)
       if (mod(i,(i/md%eqPhaseSteps+1)*md%stepFreqVelRescale) == 0) then
          call do_velocity_rescale(cluster,tempInK)
+         call do_rattle(cluster,atomPairs,md)
       end if
 
       call velocity_verlet_int_one_timestep(cluster,atomPairs,force,md)
@@ -141,7 +142,10 @@ implicit none
       if (try == md%maxEqTries) exit
    end do
 
-   if (try == md%maxEqTries) print *, 'stopped equilibration after', try,' tries'
+   if (try == md%maxEqTries) then
+      print *, 'stopped equilibration after', try,' tries'
+      stop
+   end if
 end subroutine run_thermal_equilibration
 
 subroutine velocity_verlet_int_one_timestep(cluster,atomPairs,force,mdspecs)
@@ -197,11 +201,11 @@ implicit none
    real(8),dimension(:,:),allocatable :: originalBondVec,at_temp
 
    allocate(originalBondVec(1:md%nBondConstraints,1:3))
-   allocate(at_temp(1:md%nBondConstraints*2,1:3))
+   allocate(at_temp(1:md%nBondConstraints*2+3,1:3))
 
    do i = 1, md%nBondConstraints
-      ai = 3 + (i-1)*2
-      aj = 4 + (i-1)*2
+      ai = 4 + (i-1)*2
+      aj = 5 + (i-1)*2
       originalBondVec(i,1:3) = pair(ai,aj)%vectorij
 
       at_temp(ai,1:3) = at(ai)%pos
@@ -211,8 +215,8 @@ implicit none
    do j = 1, maxShakeCycles
       esig = 0d0
       do i = 1, md%nBondConstraints
-         ai = 3 + (i-1)*2
-         aj = 4 + (i-1)*2
+         ai = 4 + (i-1)*2
+         aj = 5 + (i-1)*2
          tempBondVec = at_temp(aj,1:3) - at_temp(ai,1:3)
          esig1 = abs(sum(tempBondVec**2) - constrainedRS**2)
          esig = max(esig,esig1)
@@ -222,9 +226,9 @@ implicit none
          exit
       else
          do i = 1, md%nBondConstraints
-            ai = 3 + (i-1)*2
-            aj = 4 + (i-1)*2
-            tempBondVec = pair(ai,aj)%vectorij
+            ai = 4 + (i-1)*2
+            aj = 5 + (i-1)*2
+            tempBondVec = at_temp(aj,1:3) - at_temp(ai,1:3)
             omega2 = constrainedRS**2
             amti = 1d0/at(ai)%mass
             amtj = 1d0/at(aj)%mass
@@ -244,8 +248,8 @@ implicit none
       stop
    else
       do i = 1, md%nBondConstraints
-         ai = 3 + (i-1)*2
-         aj = 4 + (i-1)*2
+         ai = 4 + (i-1)*2
+         aj = 5 + (i-1)*2
 
          at(ai)%vel = at(ai)%vel + (at_temp(ai,1:3) - at(ai)%pos)/md%timeStep
          at(aj)%vel = at(aj)%vel + (at_temp(aj,1:3) - at(aj)%pos)/md%timeStep
@@ -269,8 +273,8 @@ implicit none
    do j = 1, maxRattleCycles
       esig = 0d0
       do i = 1, md%nBondConstraints
-         ai = 3 + (i-1)*2
-         aj = 4 + (i-1)*2
+         ai = 4 + (i-1)*2
+         aj = 5 + (i-1)*2
 
          vvv = sum( pair(ai,aj)%vectorij*(at(ai)%vel - at(aj)%vel)  )
          esig = max(esig,abs(vvv))
@@ -286,7 +290,7 @@ implicit none
       if (test) then
          exit
       else if (j == maxRattleCycles) then
-         print *, 'rattle did not converge'
+         print *, 'rattle did not converge', esig
          stop
       end if
    end do
