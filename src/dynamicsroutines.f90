@@ -23,7 +23,7 @@ implicit none
    nAtoms = size(cluster)
 
    do i = 1, md%prodSteps
-      if (mod(i,md%stepFreqOutTrajectory) == 0 ) call remove_CoM_movement(cluster)
+      if (mod(i,md%stepFreqComRemoval) == 0 ) call remove_CoM_movement(cluster)
 
       call velocity_verlet_int_one_timestep(cluster,atomPairs,force,md)
 
@@ -116,7 +116,7 @@ implicit none
          call generate_velocities(cluster,stream,tempInK)
       end if
 
-      if (mod(i,md%stepFreqOutTrajectory) == 0 ) call remove_CoM_movement(cluster)
+      if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
       if (mod(i,(i/md%eqPhaseSteps+1)*md%stepFreqVelRescale) == 0) then
          call do_velocity_rescale(cluster,tempInK)
          call do_rattle(cluster,atomPairs,md)
