@@ -1,0 +1,11 @@
+#!/bin/bash -l
+#PBS -r n
+#PBS -N test
+#PBS -l walltime=1:00:00
+#PBS -l procs=1
+#PBS -l mem=256mb
+#PBS -m a
+#PBS -M fmmartin@ualberta.ca
+cd $PBS_O_WORKDIR
+echo "Current working directory is `pwd`"
+time ./a.out
