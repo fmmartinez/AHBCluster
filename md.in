@@ -1,7 +1,7 @@
 nAtoms
 27
-seed
-4
+seed nTrajectories
+4    2
 timeStep
 0.0001d0
 EqSteps EqTries EqPhases stepFreqEqSave
@@ -12,5 +12,5 @@ ProdSteps
 1500000
 stepFreqVelRescale stepFreqCoMRemoval
 20000                  100
-stepFreqOutTrajectory
-1000
+stepFreqOutTrajectory stepFreqOutLog
+1000                  100

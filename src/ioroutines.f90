@@ -15,7 +15,7 @@ implicit none
       read(unit1,*)
       read(unit1,*) n
       read(unit1,*)
-      read(unit1,*) md%seed
+      read(unit1,*) md%seed, md%nTrajectories
       read(unit1,*)
       read(unit1,*) md%timeStep
       read(unit1,*)
@@ -27,7 +27,7 @@ implicit none
       read(unit1,*)
       read(unit1,*) md%stepFreqVelRescale,md%stepFreqCoMRemoval
       read(unit1,*)
-      read(unit1,*) md%stepFreqOutTrajectory
+      read(unit1,*) md%stepFreqOutTrajectory, md%stepFreqOutLog
    close(unit1)
    
    md%halfTimeStep = md%timeStep/2d0
@@ -129,6 +129,22 @@ implicit none
    end do
    close(unit1)
 end subroutine write_generated_initial_positions_XYZ
+
+subroutine write_xyz_trajectory(at,step,unitNumber)
+implicit none
+   integer,intent(in) :: step,unitNumber
+   type(atom),dimension(:),intent(in) :: at
+   
+   integer :: nAtoms,j
+
+   nAtoms = size(at)
+   
+   write(unitNumber,*) nAtoms
+   write(unitNumber,*) 'symbol - positions x y z --', step
+   do j = 1, nAtoms
+      write(unitNumber,'(a4,3f14.8)') at(j)%symbol, at(j)%pos(1:3)
+   end do
+end subroutine write_xyz_trajectory
 
 subroutine write_equilibration_trajectory(at,i)
 implicit none

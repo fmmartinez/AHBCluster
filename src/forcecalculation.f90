@@ -48,7 +48,7 @@ subroutine get_all_forces(pairs,force)
    
    !S vs S
    do i = 4, n-1, 2
-      force%atomPair(i,i+1) = get_SS_bond_force(pairs(i,i+1)%rij)
+      force%atomPair(i,i+1) = 0d0!get_SS_bond_force(pairs(i,i+1)%rij)
       force%atomPair(i+1,i) = force%atomPair(i,i+1)
       do j = i+2, n
          force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
@@ -78,8 +78,7 @@ implicit none
    real(8) :: f
    real(8),intent(in) :: rij
    
-   !f = -2d0*kBond*(rij - 1.781d0)
-   f = 0d0
+   f = -2d0*kBond*(rij - 1.781d0)
 end function get_SS_bond_force
 
 function get_HS_force(qq,r) result (f)
