@@ -204,7 +204,7 @@ implicit none
    type(MdData),intent(in) :: md
    
    integer :: i,j,ai,aj
-   real(8) :: esig,esig1,omega2,amti,amtj,gamm,gammi,gammj
+   real(8) :: esig1,amti,amtj,gamm,gammi,gammj
    real(8),dimension(1:3) :: tempBondVec
    real(8),dimension(:,:),allocatable :: originalBondVec,at_temp
 
@@ -246,59 +246,9 @@ implicit none
       ai = 1 + (i-1)*2
       aj = 2 + (i-1)*2
       
-      !at(ai+3)%vel = at(ai+3)%vel + (at_temp(ai,1:3) - at(ai+3)%pos)/md%timeStep
-      !at(aj+3)%vel = at(aj+3)%vel + (at_temp(aj,1:3) - at(aj+3)%pos)/md%timeStep
-      
       at(ai+3)%pos = at_temp(ai,1:3)
       at(aj+3)%pos = at_temp(aj,1:3)
    end do
-   
-   !do j = 1, maxShakeCycles
-   !   esig = 0d0
-   !   do i = 1, md%nBondConstraints
-   !      ai = 4 + (i-1)*2
-   !      aj = 5 + (i-1)*2
-   !      tempBondVec = at_temp(aj,1:3) - at_temp(ai,1:3)
-   !      esig1 = abs(sum(tempBondVec**2) - constrainedRS**2)
-   !      esig = max(esig,esig1)
-   !   end do
-
-   !   if (esig <= toleranceConstraints) then
-   !      exit
-   !   else
-   !      do i = 1, md%nBondConstraints
-   !         ai = 4 + (i-1)*2
-   !         aj = 5 + (i-1)*2
-   !         tempBondVec = at_temp(aj,1:3) - at_temp(ai,1:3)
-   !         omega2 = constrainedRS**2
-   !         amti = 1d0/at(ai)%mass
-   !         amtj = 1d0/at(aj)%mass
-
-   !         gamm = (sum(tempBondVec**2)-omega2)/(2d0*(amti+amtj)*sum(originalBondVec(i,1:3)*tempBondVec))
-   !         
-   !         gammi = gamm*amti
-   !         at_temp(ai,1:3) = at_temp(ai,1:3) + originalBondVec(i,1:3)*gammi
-   !         gammj = gamm*amtj
-   !         at_temp(aj,1:3) = at_temp(aj,1:3) - originalBondVec(i,1:3)*gammj
-   !      end do
-   !   end if
-   !end do
-
-   !if (j == maxShakeCycles) then
-   !   print *, 'rattle did not converge'
-   !   stop
-   !else
-   !   do i = 1, md%nBondConstraints
-   !      ai = 4 + (i-1)*2
-   !      aj = 5 + (i-1)*2
-
-   !      at(ai)%vel = at(ai)%vel + (at_temp(ai,1:3) - at(ai)%pos)/md%timeStep
-   !      at(aj)%vel = at(aj)%vel + (at_temp(aj,1:3) - at(aj)%pos)/md%timeStep
-   !      
-   !      at(ai)%pos = at_temp(ai,1:3)
-   !      at(aj)%pos = at_temp(aj,1:3)
-   !   end do
-   !end if
 end subroutine do_shake
 
 subroutine do_rattle(at,pair,md)
@@ -308,8 +258,7 @@ implicit none
    type(MdData),intent(in) :: md
 
    integer :: i,j,ai,aj
-   logical :: test
-   real(8) :: esig,vvv,wwm,gmma
+   real(8) :: vvv,wwm,gmma
    
    do i = 1, md%nBondConstraints
       ai = 4 + (i-1)*2
@@ -325,31 +274,6 @@ implicit none
       end do
       if (j == maxShakeCycles) stop 'shake did not converge'
    end do
-
-   !do j = 1, maxRattleCycles
-   !   esig = 0d0
-   !   do i = 1, md%nBondConstraints
-   !      ai = 4 + (i-1)*2
-   !      aj = 5 + (i-1)*2
-
-   !      vvv = sum( pair(ai,aj)%vectorij*(at(aj)%vel - at(ai)%vel)  )
-   !      esig = max(esig,abs(vvv))
-   !      wwm = 1d0/at(ai)%mass + 1d0/at(aj)%mass
-   !      gmma = vvv/(wwm*pair(ai,aj)%rij**2)
-
-   !      at(ai)%vel = at(ai)%vel - gmma/at(ai)%mass*pair(ai,aj)%vectorij
-   !      at(aj)%vel = at(aj)%vel + gmma/at(aj)%mass*pair(ai,aj)%vectorij
-   !   end do
-
-   !   test = (esig <= toleranceConstraints)
-
-   !   if (test) then
-   !      exit
-   !   else if (j == maxRattleCycles) then
-   !      print *, 'rattle did not converge', esig
-   !      stop
-   !   end if
-   !end do
 end subroutine do_rattle
 
 end module dynamicsroutines

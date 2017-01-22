@@ -5,34 +5,26 @@ use mkl_vsl
 use ioroutines
 use dynamicsroutines
 use stateevaluation
-use energycalculation
 use forcecalculation
 implicit none
 
 
-integer :: i,i_old,j,unit1,nAtoms,seed,errcode,try
-integer :: eqSteps,stepFreqEqSave,stepFreqOutTrajectory
-integer :: maxEqTries
+integer :: nAtoms,errcode
 
-real(8) :: f1,f2,f3,f4,fr,rah,rab,rbh,totalEnergy,dcscoms
-real(8) :: totalp,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy,totalKinEnergy
-real(8) :: tempInK,tempInK_old
-real(8),dimension(1:3) :: uvah,uvab,uvhb,fa,fb,fh
-
-type(Atom),dimension(:),allocatable :: cluster,cluster_old
-type(Forces) :: force, force_old
-type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_old
+type(Atom),dimension(:),allocatable :: cluster
+type(Forces) :: force
+type(AtomPairData),dimension(:,:),allocatable :: atomPairs
 type(MdData) :: md
 type(vsl_stream_state) :: stream
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
 
-allocate(cluster(1:nAtoms),cluster_old(1:nAtoms))
-allocate(atomPairs(1:nAtoms,1:nAtoms),atomPairs_old(1:nAtoms,1:nAtoms))
+allocate(cluster(1:nAtoms))
+allocate(atomPairs(1:nAtoms,1:nAtoms))
 
-allocate(force%inAtom(1:nAtoms),force_old%inAtom(1:nAtoms))
-allocate(force%atomPair(1:nAtoms,1:nAtoms),force_old%atomPair(1:nAtoms,1:nAtoms))
+allocate(force%inAtom(1:nAtoms))
+allocate(force%atomPair(1:nAtoms,1:nAtoms))
 
 !call read_force_field_file(cluster)
 call initialize_force_field_explicit_H(cluster)

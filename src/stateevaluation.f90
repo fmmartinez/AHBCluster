@@ -6,12 +6,8 @@ contains
 subroutine generate_positions(atoms)
 implicit none
    
-   integer :: i,j,n,nmol,m,l,counter
+   integer :: i,j,n,nmol,l,counter
    
-   logical :: cont
-
-   real(8) :: dvec,r1,r2
-   real(8),dimension(1:3) :: vec, uvec
    real(8),dimension(1:12,1:3) :: v
    real(8),dimension(:,:),allocatable :: cen
 
