@@ -351,6 +351,27 @@ implicit none
    
    n = size(at)
 
+   call get_center_of_mass_vector(at(1:2),complexCoM)
+   call get_center_of_mass_vector(at(3:n),solventCoM)
+
+   dvec = complexCom - solventCoM
+
+   d = sqrt(sum(dvec**2))
+
+end function get_distance_solvent_CoM_complex_CoM
+
+function get_distance_solvent_CoM_complex_CoM_with_H(at) result(d)
+implicit none
+
+   type(Atom),dimension(:),intent(in) :: at
+   
+   integer :: n
+
+   real(8) :: d
+   real(8),dimension(1:3) :: complexCoM,solventCoM,dvec
+   
+   n = size(at)
+
    call get_center_of_mass_vector(at(1:3),complexCoM)
    call get_center_of_mass_vector(at(4:n),solventCoM)
 
@@ -358,7 +379,7 @@ implicit none
 
    d = sqrt(sum(dvec**2))
 
-end function get_distance_solvent_CoM_complex_CoM
+end function get_distance_solvent_CoM_complex_CoM_with_H
 
 subroutine generate_velocities(at,stream,tempInK)
 use mkl_vsl_type
