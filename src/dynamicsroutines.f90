@@ -208,7 +208,7 @@ implicit none
    call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
 
-   call update_charges_in_complex_and_pairs(cluster,atomPairs)
+   !call update_charges_in_complex_and_pairs(cluster,atomPairs)
    
    !get force
    call get_all_forces(atomPairs,force)
@@ -221,6 +221,60 @@ implicit none
 end subroutine velocity_verlet_int_one_timestep
 
 subroutine do_shake(at,pair,md)
+implicit none
+   type(Atom),dimension(:),intent(inout) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   type(MdData),intent(in) :: md
+   
+   integer :: i,j,ai,aj
+   real(8) :: esig1,amti,amtj,gamm,gammi,gammj
+   real(8),dimension(1:3) :: tempBondVec
+   real(8),dimension(:,:),allocatable :: originalBondVec,at_temp
+
+   allocate(originalBondVec(1:md%nBondConstraints,1:3))
+   allocate(at_temp(1:md%nBondConstraints*2,1:3))
+
+   do i = 1, md%nBondConstraints
+      ai = 3 + (i-1)*2
+      aj = 4 + (i-1)*2
+      originalBondVec(i,1:3) = pair(ai,aj)%vectorij
+
+      at_temp(ai-2,1:3) = at(ai)%pos
+      at_temp(aj-2,1:3) = at(aj)%pos
+   end do
+   
+   do i = 1, md%nBondConstraints
+      ai = 1 + (i-1)*2
+      aj = 2 + (i-1)*2
+      do j = 1, maxShakeCycles
+         tempBondVec = at_temp(aj,1:3) - at_temp(ai,1:3)
+         esig1 = sum(tempBondVec**2) - constrainedRS**2
+         if (abs(esig1) < toleranceConstraints) exit
+
+         amti = 1d0/at(ai+2)%mass
+         amtj = 1d0/at(aj+2)%mass
+         gamm = esig1/(2d0*(amti+amtj)*sum(tempBondVec*originalBondVec(i,1:3)))
+         
+         gammi = gamm*amti
+         at_temp(ai,1:3) = at_temp(ai,1:3) + gammi*originalBondVec(i,1:3)
+         at(ai+2)%vel = at(ai+2)%vel + gammi*originalBondVec(i,1:3)/md%timeStep
+         gammj = gamm*amtj
+         at_temp(aj,1:3) = at_temp(aj,1:3) - gammj*originalBondVec(i,1:3)
+         at(aj+2)%vel = at(aj+2)%vel - gammj*originalBondVec(i,1:3)/md%timeStep
+      end do
+      if (j == maxShakeCycles) stop 'shake did not converge'
+   end do
+
+   do i = 1, md%nBondConstraints
+      ai = 1 + (i-1)*2
+      aj = 2 + (i-1)*2
+      
+      at(ai+2)%pos = at_temp(ai,1:3)
+      at(aj+2)%pos = at_temp(aj,1:3)
+   end do
+end subroutine do_shake
+
+subroutine do_shake_with_H(at,pair,md)
 implicit none
    type(Atom),dimension(:),intent(inout) :: at
    type(AtomPairData),dimension(:,:),intent(in) :: pair
@@ -272,9 +326,34 @@ implicit none
       at(ai+3)%pos = at_temp(ai,1:3)
       at(aj+3)%pos = at_temp(aj,1:3)
    end do
-end subroutine do_shake
+end subroutine do_shake_with_H
 
 subroutine do_rattle(at,pair,md)
+implicit none
+   type(Atom),dimension(:),intent(inout) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   type(MdData),intent(in) :: md
+
+   integer :: i,j,ai,aj
+   real(8) :: vvv,wwm,gmma
+   
+   do i = 1, md%nBondConstraints
+      ai = 3 + (i-1)*2
+      aj = 4 + (i-1)*2
+      do j = 1, maxRattleCycles
+         vvv = sum( pair(ai,aj)%vectorij*(at(aj)%vel - at(ai)%vel)  )
+         if (abs(vvv) < toleranceConstraints) exit
+         wwm = 1d0/at(ai)%mass + 1d0/at(aj)%mass
+         gmma = vvv/(wwm*constrainedRS**2)!pair(ai,aj)%rij**2)
+         
+         at(ai)%vel = at(ai)%vel + gmma*pair(ai,aj)%vectorij/at(ai)%mass
+         at(aj)%vel = at(aj)%vel - gmma*pair(ai,aj)%vectorij/at(aj)%mass
+      end do
+      if (j == maxShakeCycles) stop 'shake did not converge'
+   end do
+end subroutine do_rattle
+
+subroutine do_rattle_with_H(at,pair,md)
 implicit none
    type(Atom),dimension(:),intent(inout) :: at
    type(AtomPairData),dimension(:,:),intent(in) :: pair
@@ -297,6 +376,6 @@ implicit none
       end do
       if (j == maxShakeCycles) stop 'shake did not converge'
    end do
-end subroutine do_rattle
+end subroutine do_rattle_with_H
 
 end module dynamicsroutines
