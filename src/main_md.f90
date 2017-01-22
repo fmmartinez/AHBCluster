@@ -66,4 +66,13 @@ do i = 1, md%nTrajectories
    print *, ' '
 end do
 
+deallocate(cluster)
+deallocate(atomPairs)
+deallocate(cluster_initial)
+deallocate(atomPairs_initial)
+
+deallocate(force%inAtom)
+deallocate(force%atomPair)
+deallocate(force_initial%inAtom)
+deallocate(force_initial%atomPair)
 end program clustermd
