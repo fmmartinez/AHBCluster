@@ -15,7 +15,7 @@ implicit none
       read(unit1,*)
       read(unit1,*) n
       read(unit1,*)
-      read(unit1,*) md%seed
+      read(unit1,*) md%seed, md%nTrajectories
       read(unit1,*)
       read(unit1,*) md%timeStep
       read(unit1,*)

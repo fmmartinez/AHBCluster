@@ -28,7 +28,8 @@ type Forces
 end type Forces
 
 type MdData
-   integer :: seed, eqSteps, stepFreqEqSave, stepFreqOutTrajectory
+   integer :: seed, eqSteps, nTrajectories
+   integer :: stepFreqEqSave, stepFreqOutTrajectory
    integer :: stepFreqOutLog
    integer :: maxEqTries, eqPhases, eqPhaseSteps
    integer :: stepFreqVelRescale

@@ -1,7 +1,7 @@
 nAtoms
 27
-seed
-4
+seed nTrajectories
+4    2
 timeStep
 0.0001d0
 EqSteps EqTries EqPhases stepFreqEqSave

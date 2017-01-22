@@ -8,15 +8,13 @@ use stateevaluation
 use forcecalculation
 implicit none
 
-integer :: i,nAtoms,errcode,nTrajectories
+integer :: i,nAtoms,errcode
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
 type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_initial
 type(MdData) :: md
 type(vsl_stream_state) :: stream
-
-nTrajectories = 2
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
@@ -46,7 +44,7 @@ call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 
 call get_all_forces(atomPairs_initial,force_initial)
 
-do i = 1, nTrajectories
+do i = 1, md%nTrajectories
    cluster = cluster_initial
    atomPairs = atomPairs_initial
    force = force_initial
