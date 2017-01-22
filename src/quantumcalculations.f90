@@ -43,7 +43,49 @@ implicit none
          S(i,j) = integrate_trapezoid_rule(phi(i),valueOfOne,phi(j))
       end do
    end do
-end subroutine
+end subroutine get_overlap_matrix
+
+subroutine get_kinetic_energy_matrix(phi,d2p,K)
+implicit none
+   real(8),dimension(:,:),intent(out) :: K 
+   type(BasisFunction),dimension(:),intent(in) :: phi,d2p
+   
+   integer :: i,j,n
+   type(EvalOnGridFunction) :: valueOfOne
+
+   valueofOne%gridPointValue(1:nPointsGrid) = 1d0
+
+   n = size(phi)
+   
+   do i = 1, n
+      do j = 1, n
+         K(i,j) = -0.0479d0*integrate_trapezoid_rule(d2p(i),valueOfOne,phi(j))
+      end do
+   end do
+end subroutine get_kinetic_energy_matrix
+
+subroutine get_double_derivative_basis_functions_on_each_well(cov,ion)
+implicit none
+   type(BasisFunction),dimension(:),intent(inout) :: cov,ion
+   
+   integer :: i,j,nbc,nbi
+   real(8) :: q
+   
+   nbc = size(cov)
+   nbi = size(ion)
+
+   do i = 1, nPointsGrid
+      q = lowerLimit + (i-1)*binWidth
+      !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
+      !which by definition is ground state
+      do j = 1, nbc
+         cov(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-covMinWell)
+      end do
+      do j = 1, nbi
+         ion(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-ionMinWell)
+      end do
+   end do
+end subroutine get_double_derivative_basis_functions_on_each_well
 
 subroutine initialize_basis_functions_on_each_well(cov,ion)
 implicit none
@@ -84,6 +126,50 @@ implicit none
 
 end function eval_harmonic_oscillator_wavefunction
 
+function eval_d2_harmonic_oscillator_wavefunction(i,dx) result(d2p)
+implicit none
+   integer,intent(in) :: i
+   real(8),intent(in) :: dx
+
+   real(8) :: d2p,a,f,g,df,dg,d2f,d2g,factorial
+
+   call eval_derivatives_gaussian_function(dx,g,dg,d2g)
+   call eval_derivativez_hermite_polynomial(i,alpha*dx,f,df,d2f)
+   factorial = eval_factorial(i)
+
+   a = sqrt(alpha/(2d0**i*factorial*pisqrt))
+   d2p = a*f*d2g + 2d0*a*dg*df + a*g*d2f
+
+end function eval_d2_harmonic_oscillator_wavefunction
+
+subroutine eval_derivatives_gaussian_function(dx,d0,d1,d2)
+!the form of the gaussian is exp(-dx^2*c^2/2)
+implicit none
+   real(8),intent(in) :: dx
+   real(8),intent(out) :: d0,d1,d2
+   
+   d0 = exp(-0.5d0*alpha**2*dx**2)
+   
+   d1 = -d0*alpha**2*dx
+
+   d2 = d0*alpha**2*(alpha**2*dx**2 - 1d0)
+
+end subroutine eval_derivatives_gaussian_function
+
+subroutine eval_derivativez_hermite_polynomial(i,dx,d0,d1,d2)
+implicit none
+   integer,intent(in) :: i
+   real(8),intent(in) :: dx
+   real(8),intent(out) :: d0,d1,d2
+
+   d0 = eval_hermite_polynomial(i,dx)
+
+   d1 = 2d0*i*eval_hermite_polynomial(i-1,dx)*alpha
+
+   d2 = 4d0*i*(i-1)*eval_hermite_polynomial(i-2,dx)*alpha**2
+
+end subroutine eval_derivativez_hermite_polynomial
+
 function eval_hermite_polynomial(degree,x) result(h)
 implicit none
    integer,intent(in) :: degree
@@ -113,7 +199,6 @@ implicit none
       h = yn
    else if (degree < 0) then
       h = 0d0
-      print *, 'warning. Hermite polynomial with negative index'
    end if
 end function eval_hermite_polynomial
 
