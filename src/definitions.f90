@@ -7,8 +7,8 @@ implicit none
 
 !<--integration parameters
 integer,parameter :: nPointsGrid = 40
-real(8),parameter :: lowerLimit = 0.5d0, upperLimit = 2.1d0
-real(8),parameter :: binWidth = upperLimit-lowerLimit/nPointsGrid
+real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.6d0
+real(8),parameter :: binWidth = (upperLimit-lowerLimit)/nPointsGrid
 real(8),parameter :: covMinWell = 1.0d0, ionMinWell = 1.6d0
 real(8),parameter :: alpha = 7.735d0
 !-->
@@ -23,6 +23,8 @@ real(8),parameter :: na = 9.26d0, da = 0.95d0
 real(8),parameter :: nb = 11.42d0, db = 0.97d0
 real(8),parameter :: c = 0.776d0
 
+real(8),parameter :: pi = 3.141592653589793d0
+real(8),parameter :: pisqrt = sqrt(pi)
 real(8),parameter :: forceToVelUnits = 418.4d0, kCoulomb = 332.06d0
 real(8),parameter :: kBoltzmann = 0.831446d0
    !Boltzmann constant in amu*(A/ps)**2*K
@@ -67,7 +69,11 @@ type MdData
 end type MdData
 
 type BasisFunction
-   real(8),dimension(1:nGridPoints) :: gridPointValue
+   real(8),dimension(1:nPointsGrid) :: gridPointValue
 end type BasisFunction
+
+type EvalOnGridFunction
+   real(8),dimension(1:nPointsGrid) :: gridPointValue
+end type EvalOnGridFunction
 
 end module definitions
