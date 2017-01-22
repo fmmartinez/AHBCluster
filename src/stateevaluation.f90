@@ -33,6 +33,61 @@ implicit none
 
 
    n = size(atoms)
+   nmol = (n - 2)/2 + 1
+   l = nmol/12
+   
+   !add geometrical centers
+   allocate(cen(1:nmol,1:3))
+   counter = 0d0
+   do i = 1, l+1
+      do j = 1, 12
+         counter = counter + 1
+         if (counter == nmol) exit
+         cen(j+(i*12-12),1:3) = v(j,1:3)*5.3d0*i
+      end do
+   end do
+   
+   !place complex
+   atoms(1)%pos = cen(1,1:3) + [-1.35d0,0.0d0,0.0d0]
+   atoms(2)%pos = cen(1,1:3) + [ 1.35d0,0.0d0,0.0d0]
+
+   !place solvent
+   do i = 2, nmol
+      atoms(i*2-1)%pos = cen(i,1:3) + [-0.89d0,0d0,0d0]
+      atoms(i*2)%pos = cen(i,1:3)  + [0.89d0,0d0,0d0]
+   end do
+end subroutine generate_positions
+
+subroutine generate_positions_with_H(atoms)
+implicit none
+   
+   integer :: i,j,n,nmol,l,counter
+   
+   real(8),dimension(1:12,1:3) :: v
+   real(8),dimension(:,:),allocatable :: cen
+
+   type(Atom),dimension(:),intent(inout) :: atoms
+   
+   !fcc generating vectors
+   v(1,1:3) = [0,1,1]
+   v(2,1:3) = [1,0,1]
+   v(3,1:3) = [1,1,0]
+
+   v(4,1:3) = [0,-1,1]
+   v(5,1:3) = [-1,0,1]
+   v(6,1:3) = [-1,1,0]
+   
+   v(7,1:3) = [0,1,-1]
+   v(8,1:3) = [1,0,-1]
+   v(9,1:3) = [1,-1,0]
+   
+   v(10,1:3) = [0,-1,-1]
+   v(11,1:3) = [-1,0,-1]
+   v(12,1:3) = [-1,-1,0]
+   v = v/sqrt(2d0)
+
+
+   n = size(atoms)
    nmol = (n - 3)/2 + 1
    l = nmol/12
    
@@ -95,9 +150,58 @@ implicit none
 
    !   if (i > m) exit
    !end do
-end subroutine generate_positions
+end subroutine generate_positions_with_H
 
 subroutine get_force_field_pair_parameters(atoms,pairs)
+implicit none
+   
+   integer :: i,j,n
+
+   type(Atom),dimension(:),intent(in) :: atoms
+   type(AtomPairData),dimension(:,:),intent(inout) :: pairs
+   
+   n = size(atoms)
+   !initialize
+   do i = 1, n
+      do j = 1, n
+         pairs(i,j)%ljEps = 0d0
+         pairs(i,j)%ljSig = 0d0
+         pairs(i,j)%qq = 0d0
+      end do
+   end do
+
+   do i = 1, n-1
+      do j = i+1, n
+         pairs(i,j)%qq = atoms(i)%charge*atoms(j)%charge
+         pairs(j,i)%qq = pairs(i,j)%qq
+      end do
+   end do
+
+   do j = 3, n
+      i = 1
+      pairs(i,j)%ljEps = atoms(i)%ljEpsilon
+      pairs(j,i)%ljEps = pairs(i,j)%ljEps
+      pairs(i,j)%ljSig = atoms(i)%ljSigma
+      pairs(j,i)%ljSig = pairs(i,j)%ljSig
+      
+      i = 2
+      pairs(i,j)%ljEps = atoms(i)%ljEpsilon
+      pairs(j,i)%ljEps = pairs(i,j)%ljEps
+      pairs(i,j)%ljSig = atoms(i)%ljSigma
+      pairs(j,i)%ljSig = pairs(i,j)%ljSig
+   end do
+
+   do i = 3, n-1
+      do j = i+1, n
+         pairs(i,j)%ljEps = sqrt(atoms(i)%ljEpsilon*atoms(j)%ljEpsilon)
+         pairs(j,i)%ljEps = pairs(i,j)%ljEps
+         pairs(i,j)%ljSig = sqrt(atoms(i)%ljSigma*atoms(j)%ljSigma)
+         pairs(j,i)%ljSig = pairs(i,j)%ljSig
+      end do
+   end do
+end subroutine get_force_field_pair_parameters
+
+subroutine get_force_field_pair_parameters_with_H(atoms,pairs)
 implicit none
    
    integer :: i,j,n
@@ -153,7 +257,7 @@ implicit none
          pairs(j,i)%ljSig = pairs(i,j)%ljSig
       end do
    end do
-end subroutine get_force_field_pair_parameters
+end subroutine get_force_field_pair_parameters_with_H
 
 subroutine get_distances_and_vectors(atoms,pairs)
 implicit none
@@ -166,17 +270,6 @@ implicit none
    n = size(atoms)
 
    do i = 1, n
-      pairs(i,i)%rij = 0d0
-   end do
-
-   do i = 1, n-1
-      do j = i+1, n
-         pairs(i,j)%rij = sqrt(sum((atoms(i)%pos - atoms(j)%pos)**2))
-         pairs(j,i)%rij = pairs(i,j)%rij
-      end do
-   end do
-
-   do i = 1, n
       pairs(i,i)%vectorij = [0d0,0d0,0d0]
    end do
 
@@ -186,6 +279,18 @@ implicit none
          pairs(j,i)%vectorij = -pairs(i,j)%vectorij
       end do
    end do
+   
+   do i = 1, n
+      pairs(i,i)%rij = 0d0
+   end do
+
+   do i = 1, n-1
+      do j = i+1, n
+         pairs(i,j)%rij = sqrt(sum(pairs(i,j)%vectorij**2))
+         pairs(j,i)%rij = pairs(i,j)%rij
+      end do
+   end do
+
 end subroutine get_distances_and_vectors
 
 subroutine update_charges_in_complex_and_pairs(atoms,pairs)
@@ -246,6 +351,27 @@ implicit none
    
    n = size(at)
 
+   call get_center_of_mass_vector(at(1:2),complexCoM)
+   call get_center_of_mass_vector(at(3:n),solventCoM)
+
+   dvec = complexCom - solventCoM
+
+   d = sqrt(sum(dvec**2))
+
+end function get_distance_solvent_CoM_complex_CoM
+
+function get_distance_solvent_CoM_complex_CoM_with_H(at) result(d)
+implicit none
+
+   type(Atom),dimension(:),intent(in) :: at
+   
+   integer :: n
+
+   real(8) :: d
+   real(8),dimension(1:3) :: complexCoM,solventCoM,dvec
+   
+   n = size(at)
+
    call get_center_of_mass_vector(at(1:3),complexCoM)
    call get_center_of_mass_vector(at(4:n),solventCoM)
 
@@ -253,7 +379,7 @@ implicit none
 
    d = sqrt(sum(dvec**2))
 
-end function get_distance_solvent_CoM_complex_CoM
+end function get_distance_solvent_CoM_complex_CoM_with_H
 
 subroutine generate_velocities(at,stream,tempInK)
 use mkl_vsl_type

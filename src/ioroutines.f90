@@ -55,6 +55,41 @@ implicit none
 
 end subroutine read_force_field_file
 
+subroutine initialize_force_field_no_H(at)
+   type(atom),dimension(:),intent(inout) :: at
+   
+   integer :: i,n
+
+   n = size(at)
+   if (mod(n,2) /= 0) stop 'number of atoms must be even if no H is present'
+
+   at(1)%symbol = 'O'
+   at(1)%mass = 93d0
+   at(1)%charge = 0.0d0 !placeholder, it is replaced latter
+   at(1)%ljSigma = 3.5d0
+   at(1)%ljEpsilon = 0.3974d0
+
+   at(2)%symbol = 'N'
+   at(2)%mass = 59d0
+   at(2)%charge = 0d0 !placeholder, it is replaced latter
+   at(2)%ljSigma = 3.5d0
+   at(2)%ljEpsilon = 0.3974d0
+
+   do i = 3, n, 2
+      at(i)%symbol = 'C'
+      at(i)%mass = 15d0
+      at(i)%charge = 0.25d0
+      at(i)%ljSigma = 3.774d0
+      at(i)%ljEpsilon = 0.238d0
+      
+      at(i+1)%symbol = 'Cl'
+      at(i+1)%mass = 35.5d0
+      at(i+1)%charge = -0.25d0
+      at(i+1)%ljSigma = 3.481d0
+      at(i+1)%ljEpsilon = 0.4150d0
+   end do
+end subroutine initialize_force_field_no_H
+
 subroutine initialize_force_field_explicit_H(at)
    type(atom),dimension(:),intent(inout) :: at
    

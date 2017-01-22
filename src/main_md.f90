@@ -30,17 +30,20 @@ allocate(force_initial%inAtom(1:nAtoms))
 allocate(force_initial%atomPair(1:nAtoms,1:nAtoms))
 
 !call read_force_field_file(cluster)
-call initialize_force_field_explicit_H(cluster_initial)
+!call initialize_force_field_explicit_H(cluster_initial)
+call initialize_force_field_no_H(cluster_initial)
 
 !call read_config_in_XYZ_file(cluster)
+!call generate_positions_with_H(cluster_initial)
 call generate_positions(cluster_initial)
 call write_generated_initial_positions_XYZ(cluster_initial)
 
 !get distances and vectors in all atoms
 call get_distances_and_vectors(cluster_initial,atomPairs_initial)
+!call get_force_field_pair_parameters_with_H(cluster_initial,atomPairs_initial)
 call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 
-call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
+!call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 
 call get_all_forces(atomPairs_initial,force_initial)
 
