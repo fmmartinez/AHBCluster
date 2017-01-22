@@ -130,6 +130,22 @@ implicit none
    close(unit1)
 end subroutine write_generated_initial_positions_XYZ
 
+subroutine write_xyz_trajectory(at,step,unitNumber)
+implicit none
+   integer,intent(in) :: step,unitNumber
+   type(atom),dimension(:),intent(in) :: at
+   
+   integer :: nAtoms,j
+
+   nAtoms = size(at)
+   
+   write(unitNumber,*) nAtoms
+   write(unitNumber,*) 'symbol - positions x y z --', step
+   do j = 1, nAtoms
+      write(unitNumber,'(a4,3f14.8)') at(j)%symbol, at(j)%pos(1:3)
+   end do
+end subroutine write_xyz_trajectory
+
 subroutine write_equilibration_trajectory(at,i)
 implicit none
    integer,intent(in) :: i

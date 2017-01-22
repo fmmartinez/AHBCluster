@@ -22,8 +22,8 @@ implicit none
    
    nAtoms = size(cluster)
    
-   open(newunit=unit1,file='eq-output0000.log')
-   open(newunit=unit2,file='trajectory-pd.xyz')
+   open(newunit=unit1,file='pd-output0000.log')
+   open(newunit=unit2,file='prod-traj0000.xyz')
    
    do i = 1, md%prodSteps
       if (mod(i,md%stepFreqComRemoval) == 0 ) call remove_CoM_movement(cluster)
@@ -31,7 +31,7 @@ implicit none
       call velocity_verlet_int_one_timestep(cluster,atomPairs,force,md)
 
       if (mod(i,md%stepFreqOutTrajectory) == 0) then
-         call write_production_trajectory(cluster,i)
+         call write_xyz_trajectory(cluster,i,unit2)
       end if
       
       call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
@@ -41,7 +41,7 @@ implicit none
       instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
       dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
       totalp = get_total_momentum_magnitude(cluster)
-      write(222,'(i10,17f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+      write(unit1,'(i10,17f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
                                  dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                  totalPotEnergy,totalKinEnergy,&
                                  totalEnergy, totalp, instaTempInK
@@ -77,7 +77,7 @@ implicit none
    type(MdData),intent(in) :: md
    type(vsl_stream_state),intent(in) :: stream
    
-   integer :: i,i_old,try,nAtoms
+   integer :: i,i_old,try,nAtoms,unit1,unit2
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
@@ -104,6 +104,10 @@ implicit none
 
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
    clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
+   
+   open(newunit=unit1,file='eq-output0000.log')
+   open(newunit=unit2,file='equi-traj0000.xyz')
+   
    do while (i <= md%eqSteps)
 
       tempInK = md%initialEqTempInK + (i/md%eqPhaseSteps)*(md%targetTempInK-md%initialEqTempInK)/md%eqPhases
@@ -142,7 +146,7 @@ implicit none
       i = i + 1
 
       if (mod(i,md%stepFreqOutTrajectory) == 0) then
-         call write_equilibration_trajectory(cluster,i)
+         call write_xyz_trajectory(cluster,i,unit2)
       end if
 
       call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
@@ -151,7 +155,7 @@ implicit none
       
       dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
       totalp = get_total_momentum_magnitude(cluster)
-      write(111,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+      write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
                                  dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                  totalPotEnergy,totalKinEnergy,&
                                  totalEnergy, totalp
