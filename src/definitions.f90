@@ -31,6 +31,7 @@ type MdData
    integer :: seed, eqSteps, stepFreqEqSave, stepFreqOutTrajectory
    integer :: maxEqTries, eqPhases, eqPhaseSteps
    integer :: stepFreqVelRescale
+   integer :: stepFreqCoMRemoval
    integer :: prodSteps
    integer :: nBondConstraints
    real(8) :: timeStep, halfTimeStep

@@ -286,9 +286,9 @@ implicit none
    deallocate(velSigma)
 end subroutine generate_velocities
 
-subroutine do_velocity_rescale(at,tempInK)
+subroutine do_velocity_rescale(at,tempInK,nc)
 implicit none
-
+   integer,intent(in) :: nc
    real(8),intent(in) :: tempInK
    type(Atom),dimension(:),intent(inout) :: at
 
@@ -299,7 +299,7 @@ implicit none
 
    kineticEnergyInsta = get_kinetic_energy(at)/KToKcalMol
 
-   kineticEnergyDesired = 0.5d0*(3d0*nAtoms)*kBoltzmann*tempInK
+   kineticEnergyDesired = 0.5d0*(3d0*nAtoms-nc)*kBoltzmann*tempInK
 
    scaleFactor = sqrt(kineticEnergyDesired/kineticEnergyInsta)
    do i = 1, nAtoms
@@ -366,14 +366,14 @@ function get_total_momentum_magnitude(at) result (p)
    p = sqrt(sum(pVec**2))
    end function get_total_momentum_magnitude
 
-function get_insta_temperature(k,nAtoms) result(t)
+function get_insta_temperature(k,nAtoms,nc) result(t)
 implicit none
-   integer :: nAtoms
+   integer,intent(in) :: nAtoms,nc
    real(8),intent(in) :: k
 
    real(8) :: t
 
-   t = (2d0/(3d0*nAtoms))*k/ktoKcalMol
+   t = (2d0/(3d0*nAtoms-nc))*k/ktoKcalMol
    t = t/kBoltzmann
 end function get_insta_temperature
 

@@ -61,7 +61,7 @@ implicit none
    elj = 0d0
    eel = 0d0
    do i = 4, n-1, 2
-      eb = eb + 150d0*(pairs(i,i+1)%rij - 1.781d0)**2
+      !eb = eb + 150d0*(pairs(i,i+1)%rij - 1.781d0)**2
       do j = i+2, n
          r = pairs(i,j)%rij
          sig = pairs(i,j)%ljSig
