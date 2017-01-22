@@ -25,31 +25,8 @@ type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_old
 type(MdData) :: md
 type(vsl_stream_state) :: stream
 
-md%seed = 2
+call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
-
-nAtoms = 17 !cluster 3, solvent 9x2
-
-md%timeStep = 0.0005d0
-md%halfTimeStep = md%timeStep/2d0
-
-md%initialEqTempInK = 10
-md%targetTempInK = 150
-
-md%eqSteps = 700000
-md%stepFreqEqSave = 70000
-md%stepFreqOutTrajectory = 250
-
-md%maxEqTries = 10
-
-md%eqPhases = 10
-md%eqPhaseSteps = md%eqSteps/md%eqPhases
-
-md%stepFreqVelRescale = 20
-
-md%prodSteps = 400000
-
-md%nBondConstraints = (nAtoms-3)/2
 
 allocate(cluster(1:nAtoms),cluster_old(1:nAtoms))
 allocate(atomPairs(1:nAtoms,1:nAtoms),atomPairs_old(1:nAtoms,1:nAtoms))
@@ -74,8 +51,11 @@ call update_charges_in_complex_and_pairs(cluster,atomPairs)
 
 call get_all_forces(atomPairs,force)
 
+print *, 'equilibration start'
 call run_thermal_equilibration(cluster,atomPairs,force,md,stream)
-
+print *, 'equilibration end'
+print *, 'production start'
 call run_nve_dynamics(cluster,atomPairs,force,md)
+print *, 'production end'
 
 end program clustermd
