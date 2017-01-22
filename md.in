@@ -12,5 +12,5 @@ ProdSteps
 1500000
 stepFreqVelRescale stepFreqCoMRemoval
 20000                  100
-stepFreqOutTrajectory
-1000
+stepFreqOutTrajectory stepFreqOutLog
+1000                  100

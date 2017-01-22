@@ -37,18 +37,20 @@ implicit none
          call write_xyz_trajectory(cluster,i,unit2)
       end if
       
-      call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
-      totalKinEnergy = get_kinetic_energy(cluster)
-      totalEnergy = totalKinEnergy + totalPotEnergy
-      
-      instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
-      dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
-      totalp = get_total_momentum_magnitude(cluster)
-      write(unit1,'(i10,17f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
-                                 dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
-                                 totalPotEnergy,totalKinEnergy,&
-                                 totalEnergy, totalp, instaTempInK
-   
+      if (mod(i,md%stepFreqOutLog) == 0) then      
+         call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         totalKinEnergy = get_kinetic_energy(cluster)
+         totalEnergy = totalKinEnergy + totalPotEnergy
+         
+         instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
+         dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+         totalp = get_total_momentum_magnitude(cluster)
+         write(unit1,'(i10,17f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+                                    dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
+                                    totalPotEnergy,totalKinEnergy,&
+                                    totalEnergy, totalp, instaTempInK
+      end if
+
       if (maxval(atomPairs(1,1:nAtoms)%rij) > (2d0*(nAtoms/(0.012d0))**(1d0/3d0))) then
          print *, 'production finished at', i,'step due to evaporation',&
                   maxval(atomPairs(1,1:nAtoms)%rij)
@@ -155,20 +157,23 @@ implicit none
          call write_xyz_trajectory(cluster,i,unit2)
       end if
 
-      call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
-      totalKinEnergy = get_kinetic_energy(cluster)
-      totalEnergy = totalKinEnergy + totalPotEnergy
-      
-      dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
-      totalp = get_total_momentum_magnitude(cluster)
-      write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
-                                 dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
-                                 totalPotEnergy,totalKinEnergy,&
-                                 totalEnergy, totalp
-      if (try == md%maxEqTries) exit
+      if (mod(i,md%stepFreqOutLog) == 0) then      
+         call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         totalKinEnergy = get_kinetic_energy(cluster)
+         totalEnergy = totalKinEnergy + totalPotEnergy
+         
+         dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+         totalp = get_total_momentum_magnitude(cluster)
+         write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+                                    dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
+                                    totalPotEnergy,totalKinEnergy,&
+                                    totalEnergy, totalp
+      end if
+
+      if (try > md%maxEqTries) exit
    end do
 
-   if (try == md%maxEqTries) then
+   if (try > md%maxEqTries) then
       print *, 'stopped equilibration after', try,' tries'
       stop
    end if

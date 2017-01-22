@@ -27,7 +27,7 @@ implicit none
       read(unit1,*)
       read(unit1,*) md%stepFreqVelRescale,md%stepFreqCoMRemoval
       read(unit1,*)
-      read(unit1,*) md%stepFreqOutTrajectory
+      read(unit1,*) md%stepFreqOutTrajectory, md%stepFreqOutLog
    close(unit1)
    
    md%halfTimeStep = md%timeStep/2d0
