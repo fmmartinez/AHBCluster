@@ -221,17 +221,6 @@ implicit none
    n = size(atoms)
 
    do i = 1, n
-      pairs(i,i)%rij = 0d0
-   end do
-
-   do i = 1, n-1
-      do j = i+1, n
-         pairs(i,j)%rij = sqrt(sum((atoms(i)%pos - atoms(j)%pos)**2))
-         pairs(j,i)%rij = pairs(i,j)%rij
-      end do
-   end do
-
-   do i = 1, n
       pairs(i,i)%vectorij = [0d0,0d0,0d0]
    end do
 
@@ -241,6 +230,18 @@ implicit none
          pairs(j,i)%vectorij = -pairs(i,j)%vectorij
       end do
    end do
+   
+   do i = 1, n
+      pairs(i,i)%rij = 0d0
+   end do
+
+   do i = 1, n-1
+      do j = i+1, n
+         pairs(i,j)%rij = sqrt(sum(pairs(i,j)%vectorij**2))
+         pairs(j,i)%rij = pairs(i,j)%rij
+      end do
+   end do
+
 end subroutine get_distances_and_vectors
 
 subroutine update_charges_in_complex_and_pairs(atoms,pairs)
