@@ -152,6 +152,55 @@ implicit none
    !end do
 end subroutine generate_positions
 
+subroutine get_force_field_pair_parameters_no_H(atoms,pairs)
+implicit none
+   
+   integer :: i,j,n
+
+   type(Atom),dimension(:),intent(in) :: atoms
+   type(AtomPairData),dimension(:,:),intent(inout) :: pairs
+   
+   n = size(atoms)
+   !initialize
+   do i = 1, n
+      do j = 1, n
+         pairs(i,j)%ljEps = 0d0
+         pairs(i,j)%ljSig = 0d0
+         pairs(i,j)%qq = 0d0
+      end do
+   end do
+
+   do i = 1, n-1
+      do j = i+1, n
+         pairs(i,j)%qq = atoms(i)%charge*atoms(j)%charge
+         pairs(j,i)%qq = pairs(i,j)%qq
+      end do
+   end do
+
+   do j = 3, n
+      i = 1
+      pairs(i,j)%ljEps = atoms(i)%ljEpsilon
+      pairs(j,i)%ljEps = pairs(i,j)%ljEps
+      pairs(i,j)%ljSig = atoms(i)%ljSigma
+      pairs(j,i)%ljSig = pairs(i,j)%ljSig
+      
+      i = 2
+      pairs(i,j)%ljEps = atoms(i)%ljEpsilon
+      pairs(j,i)%ljEps = pairs(i,j)%ljEps
+      pairs(i,j)%ljSig = atoms(i)%ljSigma
+      pairs(j,i)%ljSig = pairs(i,j)%ljSig
+   end do
+
+   do i = 3, n-1
+      do j = i+1, n
+         pairs(i,j)%ljEps = sqrt(atoms(i)%ljEpsilon*atoms(j)%ljEpsilon)
+         pairs(j,i)%ljEps = pairs(i,j)%ljEps
+         pairs(i,j)%ljSig = sqrt(atoms(i)%ljSigma*atoms(j)%ljSigma)
+         pairs(j,i)%ljSig = pairs(i,j)%ljSig
+      end do
+   end do
+end subroutine get_force_field_pair_parameters_no_H
+
 subroutine get_force_field_pair_parameters(atoms,pairs)
 implicit none
    
