@@ -65,7 +65,7 @@ subroutine initialize_force_field_no_H(at)
 
    at(1)%symbol = 'O'
    at(1)%mass = 93d0
-   at(1)%charge = -0.5d0 !placeholder, it is replaced latter
+   at(1)%charge = 0.0d0 !placeholder, it is replaced latter
    at(1)%ljSigma = 3.5d0
    at(1)%ljEpsilon = 0.3974d0
 
