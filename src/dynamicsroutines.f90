@@ -35,7 +35,7 @@ implicit none
       totalKinEnergy = get_kinetic_energy(cluster)
       totalEnergy = totalKinEnergy + totalPotEnergy
       
-      instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms)
+      instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
       dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
       totalp = get_total_momentum_magnitude(cluster)
       write(222,'(i10,17f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
@@ -43,13 +43,18 @@ implicit none
                                  totalPotEnergy,totalKinEnergy,&
                                  totalEnergy, totalp, instaTempInK
    
-      if (dcscoms > ((nAtoms/(2*0.012d0))**(1d0/3d0))) then
-         print *, 'production finished at', i,'step due to evaporation'
+      if (maxval(atomPairs(1,1:nAtoms)%rij) > (2d0*(nAtoms/(0.012d0))**(1d0/3d0))) then
+         print *, 'production finished at', i,'step due to evaporation',&
+                  maxval(atomPairs(1,1:nAtoms)%rij)
          exit
       end if
    end do
 
-   print *, 'successful production run'
+   if (i >= md%prodSteps) then
+      print *, 'finished successful production run', i
+   else
+      print *, 'production run finished early', i
+   end if
 
 end subroutine run_nve_dynamics
 
@@ -68,7 +73,7 @@ implicit none
    type(vsl_stream_state),intent(in) :: stream
    
    integer :: i,i_old,try,nAtoms
-   real(8) :: tempInK
+   real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
    type(Atom),dimension(:),allocatable :: cluster_old
@@ -93,7 +98,7 @@ implicit none
    i_old = i
 
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
-   
+   clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
    do while (i <= md%eqSteps)
 
       tempInK = md%initialEqTempInK + (i/md%eqPhaseSteps)*(md%targetTempInK-md%initialEqTempInK)/md%eqPhases
@@ -104,23 +109,28 @@ implicit none
          force_old = force
          i_old = i
       end if
-
-      if (dcscoms > ((nAtoms/(4d0*0.012d0))**(1d0/3d0))) then
+      
+      maxDistAS = clusterRadius*1.75d0*(0.75d0+(i/md%eqPhaseSteps)*(0.25/md%eqPhases))
+      if (maxval(atomPairs(1,1:nAtoms)%rij) > maxDistAS) then
          cluster = cluster_old
          atomPairs = atomPairs_old
          force = force_old
-         print *, try, 'evaporated and failed at', i
+         print *, try, 'evaporated and failed at', i, maxval(atomPairs(1,1:nAtoms)%rij)
          i = i_old
          try = try + 1
          print *, 'restart', try
          call generate_velocities(cluster,stream,tempInK)
+         call remove_CoM_movement(cluster)
+         call do_rattle(cluster,atomPairs,md)
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
       end if
 
       if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
       if (mod(i,(i/md%eqPhaseSteps+1)*md%stepFreqVelRescale) == 0) then
-         call do_velocity_rescale(cluster,tempInK)
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
+         call remove_CoM_movement(cluster)
          call do_rattle(cluster,atomPairs,md)
-         call do_velocity_rescale(cluster,tempInK)
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
       end if
 
       call velocity_verlet_int_one_timestep(cluster,atomPairs,force,md)
@@ -172,9 +182,6 @@ implicit none
       cluster(j)%pos = cluster(j)%pos + dt*cluster(j)%vel
    end do
    
-   !positions changed update positions and vectors, apply constraints and update
-   !again
-   !call get_distances_and_vectors(cluster,atomPairs)
    call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
 
@@ -227,8 +234,10 @@ implicit none
          
          gammi = gamm*amti
          at_temp(ai,1:3) = at_temp(ai,1:3) + gammi*originalBondVec(i,1:3)
+         at(ai+3)%vel = at(ai+3)%vel + gammi*originalBondVec(i,1:3)/md%timeStep
          gammj = gamm*amtj
          at_temp(aj,1:3) = at_temp(aj,1:3) - gammj*originalBondVec(i,1:3)
+         at(aj+3)%vel = at(aj+3)%vel - gammj*originalBondVec(i,1:3)/md%timeStep
       end do
       if (j == maxShakeCycles) stop 'shake did not converge'
    end do
@@ -237,8 +246,8 @@ implicit none
       ai = 1 + (i-1)*2
       aj = 2 + (i-1)*2
       
-      at(ai+3)%vel = at(ai+3)%vel + (at_temp(ai,1:3) - at(ai+3)%pos)/md%timeStep
-      at(aj+3)%vel = at(aj+3)%vel + (at_temp(aj,1:3) - at(aj+3)%pos)/md%timeStep
+      !at(ai+3)%vel = at(ai+3)%vel + (at_temp(ai,1:3) - at(ai+3)%pos)/md%timeStep
+      !at(aj+3)%vel = at(aj+3)%vel + (at_temp(aj,1:3) - at(aj+3)%pos)/md%timeStep
       
       at(ai+3)%pos = at_temp(ai,1:3)
       at(aj+3)%pos = at_temp(aj,1:3)
@@ -309,10 +318,10 @@ implicit none
          vvv = sum( pair(ai,aj)%vectorij*(at(aj)%vel - at(ai)%vel)  )
          if (abs(vvv) < toleranceConstraints) exit
          wwm = 1d0/at(ai)%mass + 1d0/at(aj)%mass
-         gmma = vvv/(wwm*pair(ai,aj)%rij**2)
+         gmma = vvv/(wwm*constrainedRS**2)!pair(ai,aj)%rij**2)
          
-         at(ai)%vel = at(ai)%vel + gmma/at(ai)%mass*pair(ai,aj)%vectorij
-         at(aj)%vel = at(aj)%vel - gmma/at(aj)%mass*pair(ai,aj)%vectorij
+         at(ai)%vel = at(ai)%vel + gmma*pair(ai,aj)%vectorij/at(ai)%mass
+         at(aj)%vel = at(aj)%vel - gmma*pair(ai,aj)%vectorij/at(aj)%mass
       end do
       if (j == maxShakeCycles) stop 'shake did not converge'
    end do
