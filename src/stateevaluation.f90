@@ -3,6 +3,61 @@ use definitions
 
 contains
 
+subroutine generate_positions_no_H(atoms)
+implicit none
+   
+   integer :: i,j,n,nmol,l,counter
+   
+   real(8),dimension(1:12,1:3) :: v
+   real(8),dimension(:,:),allocatable :: cen
+
+   type(Atom),dimension(:),intent(inout) :: atoms
+   
+   !fcc generating vectors
+   v(1,1:3) = [0,1,1]
+   v(2,1:3) = [1,0,1]
+   v(3,1:3) = [1,1,0]
+
+   v(4,1:3) = [0,-1,1]
+   v(5,1:3) = [-1,0,1]
+   v(6,1:3) = [-1,1,0]
+   
+   v(7,1:3) = [0,1,-1]
+   v(8,1:3) = [1,0,-1]
+   v(9,1:3) = [1,-1,0]
+   
+   v(10,1:3) = [0,-1,-1]
+   v(11,1:3) = [-1,0,-1]
+   v(12,1:3) = [-1,-1,0]
+   v = v/sqrt(2d0)
+
+
+   n = size(atoms)
+   nmol = (n - 2)/2 + 1
+   l = nmol/12
+   
+   !add geometrical centers
+   allocate(cen(1:nmol,1:3))
+   counter = 0d0
+   do i = 1, l+1
+      do j = 1, 12
+         counter = counter + 1
+         if (counter == nmol) exit
+         cen(j+(i*12-12),1:3) = v(j,1:3)*5.3d0*i
+      end do
+   end do
+   
+   !place complex
+   atoms(1)%pos = cen(1,1:3) + [-1.35d0,0.0d0,0.0d0]
+   atoms(2)%pos = cen(1,1:3) + [ 1.35d0,0.0d0,0.0d0]
+
+   !place solvent
+   do i = 2, nmol
+      atoms(i*2-1)%pos = cen(i,1:3) + [-0.89d0,0d0,0d0]
+      atoms(i*2)%pos = cen(i,1:3)  + [0.89d0,0d0,0d0]
+   end do
+end subroutine generate_positions_no_H
+
 subroutine generate_positions(atoms)
 implicit none
    
