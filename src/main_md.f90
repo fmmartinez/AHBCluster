@@ -14,6 +14,7 @@ type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
 type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_initial
 type(MdData) :: md
+type(IntegrationData) :: S
 type(vsl_stream_state) :: stream
 
 call read_md_input_file(nAtoms,md)
@@ -44,6 +45,8 @@ call get_distances_and_vectors(cluster_initial,atomPairs_initial)
 call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
+
+call initialize_quantum_integral_parameters(S)
 
 call get_all_forces(atomPairs_initial,force_initial)
 

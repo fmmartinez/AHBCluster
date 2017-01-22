@@ -4,6 +4,18 @@ implicit none
 
 contains
 
+subroutine initialize_quantum_integral_parameters(id)
+implicit none
+   type(IntegrationData),intent(inout) :: id
+
+   id%lowerLimit = 0.5d0
+   id%upperLimit = 2.1d0
+   id%binWidth = (id%upperlimit - id%lowerLimit)/id%nPointsGrid
+   id%covMinWell = 1.0d0
+   id%ionMinWell = 1.6d0
+   id%alpha = 7.735d0
+end subroutine initialize_quantum_integral_parameters
+
 subroutine read_md_input_file(n,md)
 implicit none
    integer,intent(inout) :: n
