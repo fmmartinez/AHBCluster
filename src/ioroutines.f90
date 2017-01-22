@@ -61,7 +61,7 @@ subroutine initialize_force_field_no_H(at)
    integer :: i,n
 
    n = size(at)
-   if (mod(n,2) /= 0) stop 'number of atoms must be even'
+   if (mod(n,2) /= 0) stop 'number of atoms must be even if no H is present'
 
    at(1)%symbol = 'O'
    at(1)%mass = 93d0

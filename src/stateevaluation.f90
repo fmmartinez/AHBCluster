@@ -3,7 +3,7 @@ use definitions
 
 contains
 
-subroutine generate_positions_no_H(atoms)
+subroutine generate_positions(atoms)
 implicit none
    
    integer :: i,j,n,nmol,l,counter
@@ -56,9 +56,9 @@ implicit none
       atoms(i*2-1)%pos = cen(i,1:3) + [-0.89d0,0d0,0d0]
       atoms(i*2)%pos = cen(i,1:3)  + [0.89d0,0d0,0d0]
    end do
-end subroutine generate_positions_no_H
+end subroutine generate_positions
 
-subroutine generate_positions(atoms)
+subroutine generate_positions_with_H(atoms)
 implicit none
    
    integer :: i,j,n,nmol,l,counter
@@ -150,9 +150,9 @@ implicit none
 
    !   if (i > m) exit
    !end do
-end subroutine generate_positions
+end subroutine generate_positions_with_H
 
-subroutine get_force_field_pair_parameters_no_H(atoms,pairs)
+subroutine get_force_field_pair_parameters(atoms,pairs)
 implicit none
    
    integer :: i,j,n
@@ -199,9 +199,9 @@ implicit none
          pairs(j,i)%ljSig = pairs(i,j)%ljSig
       end do
    end do
-end subroutine get_force_field_pair_parameters_no_H
+end subroutine get_force_field_pair_parameters
 
-subroutine get_force_field_pair_parameters(atoms,pairs)
+subroutine get_force_field_pair_parameters_with_H(atoms,pairs)
 implicit none
    
    integer :: i,j,n
@@ -257,7 +257,7 @@ implicit none
          pairs(j,i)%ljSig = pairs(i,j)%ljSig
       end do
    end do
-end subroutine get_force_field_pair_parameters
+end subroutine get_force_field_pair_parameters_with_H
 
 subroutine get_distances_and_vectors(atoms,pairs)
 implicit none
