@@ -4,24 +4,27 @@ implicit none
 
 contains
 
-subroutine run_nve_dynamics(cluster,atomPairs,force,md)
+subroutine run_nve_dynamics(cluster,atomPairs,force,md,trj)
 use ioroutines
 use stateevaluation
 use energycalculation
 implicit none
-   
+   integer,intent(in) :: trj
    type(Atom),dimension(:),intent(inout) :: cluster
    type(Forces),intent(inout) :: force
    type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
    type(MdData),intent(in) :: md
    
-   integer :: i,nAtoms
+   integer :: i,nAtoms,unit1,unit2
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
    real(8) :: instaTempInK
    
    nAtoms = size(cluster)
-
+   
+   open(newunit=unit1,file='eq-output0000.log')
+   open(newunit=unit2,file='trajectory-pd.xyz')
+   
    do i = 1, md%prodSteps
       if (mod(i,md%stepFreqComRemoval) == 0 ) call remove_CoM_movement(cluster)
 
@@ -55,17 +58,19 @@ implicit none
    else
       print *, 'production run finished early', i
    end if
-
+   
+   close(unit2)
+   close(unit1)
 end subroutine run_nve_dynamics
 
-subroutine run_thermal_equilibration(cluster,atomPairs,force,md,stream)
+subroutine run_thermal_equilibration(cluster,atomPairs,force,md,stream,trj)
 use ioroutines
 use stateevaluation
 use energycalculation
 use mkl_vsl_type
 use mkl_vsl
 implicit none
-
+   integer,intent(in) :: trj
    type(Atom),dimension(:),intent(inout) :: cluster
    type(Forces),intent(inout) :: force
    type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
