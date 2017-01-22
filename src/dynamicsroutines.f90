@@ -15,6 +15,7 @@ implicit none
    type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
    type(MdData),intent(in) :: md
    
+   character(17) :: outLogFile, trjxyzFile
    integer :: i,nAtoms,unit1,unit2
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
@@ -22,8 +23,10 @@ implicit none
    
    nAtoms = size(cluster)
    
-   open(newunit=unit1,file='pd-output0000.log')
-   open(newunit=unit2,file='prod-traj0000.xyz')
+   write(outLogFile,'(a9,i4.4,a4)') 'pd-output',trj,'.log'
+   write(trjxyzFile,'(a9,i4.4,a4)') 'prod-traj',trj,'.xyz'
+   open(newunit=unit1,file=outLogFile)
+   open(newunit=unit2,file=trjxyzFile)
    
    do i = 1, md%prodSteps
       if (mod(i,md%stepFreqComRemoval) == 0 ) call remove_CoM_movement(cluster)
@@ -77,6 +80,7 @@ implicit none
    type(MdData),intent(in) :: md
    type(vsl_stream_state),intent(in) :: stream
    
+   character(17) :: outLogFile, trjxyzFile
    integer :: i,i_old,try,nAtoms,unit1,unit2
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
@@ -105,8 +109,10 @@ implicit none
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
    clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
    
-   open(newunit=unit1,file='eq-output0000.log')
-   open(newunit=unit2,file='equi-traj0000.xyz')
+   write(outLogFile,'(a9,i4.4,a4)') 'eq-output',trj,'.log'
+   write(trjxyzFile,'(a9,i4.4,a4)') 'equi-traj',trj,'.xyz'
+   open(newunit=unit1,file=outLogFile)
+   open(newunit=unit2,file=trjxyzFile)
    
    do while (i <= md%eqSteps)
 
@@ -166,6 +172,9 @@ implicit none
       print *, 'stopped equilibration after', try,' tries'
       stop
    end if
+
+   close(unit2)
+   close(unit1)
 end subroutine run_thermal_equilibration
 
 subroutine velocity_verlet_int_one_timestep(cluster,atomPairs,force,mdspecs)

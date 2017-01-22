@@ -16,7 +16,7 @@ type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_initial
 type(MdData) :: md
 type(vsl_stream_state) :: stream
 
-nTrajectories = 1
+nTrajectories = 2
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
