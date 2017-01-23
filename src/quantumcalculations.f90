@@ -241,4 +241,35 @@ implicit none
    end do
 end function eval_factorial
 
+subroutine get_subsystem_lambdas(H,S,l,e)
+implicit none
+   real(8),dimension(:),intent(out) :: e
+   real(8),dimension(:,:),intent(in) :: H,S
+   real(8),dimension(:,:),intent(out) :: l
+   
+   integer :: n,m,lwork,info_1
+   real(8),dimension(:),allocatable :: w,work
+   real(8),dimension(:,:),allocatable :: Htemp,Stemp
+
+   n = size(H,1)
+   m = size(e)
+
+   allocate(Htemp(1:n,1:n))
+   allocate(Stemp(1:n,1:n))
+   allocate(w(1:n))
+   allocate(work(1:n*50))
+   
+   lwork = n*40
+   
+   Htemp = H
+   Stemp = S
+   call dsygv(1,'V','U',n,Htemp,n,Stemp,n,w,work,lwork,info_1)
+   
+   e(1:m) = w(1:m)
+   l(1:n,1:m) = Htemp(1:n,1:m)
+
+   deallocate(Stemp)
+   deallocate(Htemp)
+end subroutine
+
 end module quantumcalculations
