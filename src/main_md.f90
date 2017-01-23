@@ -10,8 +10,11 @@ use quantumcalculations
 implicit none
 
 integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
+integer :: nMapStates
 
-real(8),dimension(:,:),allocatable :: KMatrix, SMatrix
+real(8),dimension(:),allocatable :: eigenvalues
+real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
+real(8),dimension(:,:),allocatable :: lambda,h
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
@@ -19,11 +22,14 @@ type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_initial
 type(MdData) :: md
 type(BasisFunction),dimension(:),allocatable :: phiCov, phiIon, phi
 type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
+type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
 type(vsl_stream_state) :: stream
 
 nBasisFunCov = 6
 nBasisFunIon = 6
 nBasisFun = nBasisFunCov + nBasisFunIon
+
+nMapStates = 4
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
@@ -45,8 +51,16 @@ allocate(d2pCov(1:nBasisFunCov))
 allocate(d2pIon(1:nBasisFunIon))
 allocate(d2p(1:nBasisFun))
 
+allocate(gridHSolvent(1:nAtoms))
+
 allocate(KMatrix(1:nBasisFun,1:nBasisFun))
+allocate(VhMatrix(1:nBasisFun,1:nBasisFun))
 allocate(SMatrix(1:nBasisFun,1:nBasisFun))
+allocate(HMatrix(1:nBasisFun,1:nBasisFun))
+
+allocate(eigenvalues(1:nMapStates))
+allocate(lambda(1:nBasisFun,1:nMapStates))
+allocate(h(1:nMapStates,1:nMapStates))
 
 !call read_force_field_file(cluster)
 !call initialize_force_field_explicit_H(cluster_initial)
@@ -59,6 +73,12 @@ call write_generated_initial_positions_XYZ(cluster_initial)
 
 !get distances and vectors in all atoms
 call get_distances_and_vectors(cluster_initial,atomPairs_initial)
+!get distances and vectors of all solvent atoms with H grid
+call get_H_grid_Atoms_pos_and_vec(gridHSolvent,atomPairs_initial)
+print '(3f12.5)', cluster_initial(1)%pos
+do i = 1, nPointsGrid+1
+   print '(f10.4,3f12.5)', gridHSolvent(1)%gridPoint(i)%rij, gridHSolvent(1)%gridPoint(i)%vectorij
+end do
 !call get_force_field_pair_parameters_with_H(cluster_initial,atomPairs_initial)
 call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 
@@ -69,11 +89,17 @@ call get_overlap_matrix(phi,SMatrix)
 call get_double_derivative_basis_functions_on_each_well(d2pCov,d2pIon)
 d2p(1:nBasisFunCov) = d2pCov
 d2p(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = d2pIon
-call get_kinetic_energy_matrix(phi,d2p,kMatrix)
+call get_phi_KineticEnergy_phi_matrix(phi,d2p,KMatrix)
+call get_phi_Vsubsystem_phi_matrix(phi,atomPairs_initial(1,2)%rij,VhMatrix)
 
-print '(12f13.6)', KMatrix
+HMatrix = KMatrix + VhMatrix
+call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
+
+call &
+get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,eigenvalues,lambda,Smatrix,Smatrix,Smatrix,h)
+print '(4f13.4)', eigenvalues
 print *,''
-print '(12f13.9)', SMatrix
+print '(12f13.4)', lambda(1:12,1)
 stop
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)

@@ -46,6 +46,11 @@ type AtomPairData
    real(8),dimension(1:3) :: vectorij
 end type AtomPairData
 
+type PointData
+   real(8) :: rij
+   real(8),dimension(1:3) :: vectorij
+end type PointData
+
 type ForceInAtom
    real(8),dimension(1:3) :: total
 end type ForceInAtom
@@ -75,5 +80,9 @@ end type BasisFunction
 type EvalOnGridFunction
    real(8),dimension(1:nPointsGrid+1) :: gridPointValue
 end type EvalOnGridFunction
+
+type EvalOnGridHData
+   type(PointData),dimension(1:nPointsGrid+1) :: gridPoint
+end type EvalOnGridHData
 
 end module definitions
