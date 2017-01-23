@@ -77,7 +77,7 @@ implicit none
 
    do i = 1, nPointsGrid
       q = lowerLimit + (i-1)*binWidth
-      vh%gridPointValue(i) = get_complex_energy(q,rab)
+      vh%gridPointValue(i) = get_complex_energy_attraction_part(q,rab)
    end do
 
    n = size(phi)
