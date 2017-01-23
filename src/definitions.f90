@@ -85,4 +85,8 @@ type EvalOnGridHData
    type(PointData),dimension(1:nPointsGrid+1) :: gridPoint
 end type EvalOnGridHData
 
+type MatrixList
+   real(8),dimension(:,:),allocatable :: mat
+end type MatrixList
+
 end module definitions
