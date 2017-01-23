@@ -45,7 +45,7 @@ implicit none
    end do
 end subroutine get_overlap_matrix
 
-subroutine get_kinetic_energy_matrix(phi,d2p,K)
+subroutine get_phi_KineticEnergy_phi_matrix(phi,d2p,K)
 implicit none
    real(8),dimension(:,:),intent(out) :: K 
    type(BasisFunction),dimension(:),intent(in) :: phi,d2p
@@ -62,9 +62,9 @@ implicit none
          K(i,j) = -0.0479d0*integrate_trapezoid_rule(d2p(i),valueOfOne,phi(j))
       end do
    end do
-end subroutine get_kinetic_energy_matrix
+end subroutine get_phi_KineticEnergy_phi_matrix
 
-subroutine get_hydrogen_bond_potential_energy_matrix(phi,rab,V)
+subroutine get_phi_Vsubsystem_phi_matrix(phi,rab,V)
 use energycalculation
 implicit none
    real(8),intent(in) :: rab
@@ -88,7 +88,7 @@ implicit none
       end do
    end do
 
-end subroutine get_hydrogen_bond_potential_energy_matrix
+end subroutine get_phi_Vsubsystem_phi_matrix
 
 subroutine get_double_derivative_basis_functions_on_each_well(cov,ion)
 implicit none
