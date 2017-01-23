@@ -15,10 +15,12 @@ implicit none
 
    pp = f%gridPointValue(1)*g%gridPointValue(1)*h%gridPointValue(1)
    
-   m = nPointsGrid
+   m = nPointsGrid+1
    pp = pp + f%gridPointValue(m)*g%gridPointValue(m)*h%gridPointValue(m)
+   
+   pp = 0.5d0*pp
 
-   do i = 2, nPointsGrid-1
+   do i = 2, nPointsGrid
       pp = pp + f%gridPointValue(i)*g%gridPointValue(i)*h%gridPointValue(i)
    end do
 
@@ -34,7 +36,7 @@ implicit none
    integer :: i,j,n
    type(EvalOnGridFunction) :: valueOfOne
 
-   valueofOne%gridPointValue(1:nPointsGrid) = 1d0
+   valueofOne%gridPointValue(1:nPointsGrid+1) = 1d0
 
    n = size(phi)
 
@@ -53,7 +55,7 @@ implicit none
    integer :: i,j,n
    type(EvalOnGridFunction) :: valueOfOne
 
-   valueofOne%gridPointValue(1:nPointsGrid) = 1d0
+   valueofOne%gridPointValue(1:nPointsGrid+1) = 1d0
 
    n = size(phi)
    
@@ -75,7 +77,7 @@ implicit none
    real(8) :: q
    type(EvalOnGridFunction) :: vh
 
-   do i = 1, nPointsGrid
+   do i = 1, nPointsGrid+1
       q = lowerLimit + (i-1)*binWidth
       vh%gridPointValue(i) = get_complex_energy_attraction_part(q,rab)
    end do
@@ -100,7 +102,7 @@ implicit none
    nbc = size(cov)
    nbi = size(ion)
 
-   do i = 1, nPointsGrid
+   do i = 1, nPointsGrid+1
       q = lowerLimit + (i-1)*binWidth
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state
@@ -123,7 +125,7 @@ implicit none
    nbc = size(cov)
    nbi = size(ion)
 
-   do i = 1, nPointsGrid
+   do i = 1, nPointsGrid+1
       q = lowerLimit + (i-1)*binWidth
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state

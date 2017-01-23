@@ -69,11 +69,11 @@ type MdData
 end type MdData
 
 type BasisFunction
-   real(8),dimension(1:nPointsGrid) :: gridPointValue
+   real(8),dimension(1:nPointsGrid+1) :: gridPointValue
 end type BasisFunction
 
 type EvalOnGridFunction
-   real(8),dimension(1:nPointsGrid) :: gridPointValue
+   real(8),dimension(1:nPointsGrid+1) :: gridPointValue
 end type EvalOnGridFunction
 
 end module definitions
