@@ -64,6 +64,32 @@ implicit none
    end do
 end subroutine get_kinetic_energy_matrix
 
+subroutine get_hydrogen_bond_potential_energy_matrix(phi,rab,V)
+use energycalculation
+implicit none
+   real(8),intent(in) :: rab
+   real(8),dimension(:,:),intent(out) :: V
+   type(basisFunction),dimension(:),intent(in) :: phi
+   
+   integer :: i,j,n
+   real(8) :: q
+   type(EvalOnGridFunction) :: vh
+
+   do i = 1, nPointsGrid
+      q = lowerLimit + (i-1)*binWidth
+      vh%gridPointValue(i) = get_complex_energy(q,rab)
+   end do
+
+   n = size(phi)
+
+   do i = 1, n
+      do j = 1, n
+         V(i,j) = integrate_trapezoid_rule(phi(i),vh,phi(j))
+      end do
+   end do
+
+end subroutine get_hydrogen_bond_potential_energy_matrix
+
 subroutine get_double_derivative_basis_functions_on_each_well(cov,ion)
 implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
