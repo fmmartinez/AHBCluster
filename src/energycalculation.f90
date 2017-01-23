@@ -18,7 +18,7 @@ function get_complex_energy_repulsion_part(rab) result(e)
 implicit none
    real(8),intent(in) :: rab
 
-   real(8) :: e,rbh
+   real(8) :: e
 
    e = b*exp(-a*rab)
 
