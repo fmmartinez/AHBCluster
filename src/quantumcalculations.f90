@@ -117,14 +117,51 @@ implicit none
    
    call get_lambda_VASol_lambda_matrix(at,pair,lambda,pAp,vas)
    call get_lambda_VBSol_lambda_matrix(at,pair,lambda,pBp,vbs)
-   !call get_lambda_VHSol_lambda_matrix(vhs)
+   call get_lambda_VHSol_lambda_matrix(at,pair,lambda,pHp,vhs)
 
-   h = h + vas + vbs !+ vhs
+   h = h + vas + vbs + vhs
 
    deallocate(vhs)
    deallocate(vbs)
    deallocate(vas)
 end subroutine get_lambda_h_lambda_matrix
+
+subroutine get_lambda_VHSol_lambda_matrix(at,pair,lambda,phifphi,v)
+implicit none
+   real(8),parameter :: hCharge = 0.5d0
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: v
+   
+   integer :: i,j,k,na,nb,nm
+   real(8) :: vc,prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   na = size(at)
+   nb = size(lambda,1)
+   nm = size(v,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   v = 0d0
+   do k = 3, na
+      prefactor = kCoulomb*at(k)%charge*hCharge
+      do i = 1, nm
+         do j = 1, nm
+            li = lambda(1:nb,i)
+            lj = lambda(1:nb,j)
+            vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+            v(i,j) = v(i,j) + vc
+         end do
+      end do
+      v = prefactor*v
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_VHSol_lambda_matrix
 
 subroutine get_lambda_VASol_lambda_matrix(at,pair,lambda,phifphi,v)
 implicit none
