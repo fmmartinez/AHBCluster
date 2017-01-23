@@ -14,6 +14,27 @@ implicit none
    e = b*exp(-a*rab)+d*(1-exp(-(na*(rah-da)**2)/(2d0*rah)))+c*d*(1-exp(-nb*(rbh-db)**2/(2d0*rbh)))
 end function get_complex_energy
 
+function get_complex_energy_repulsion_part(rab) result(e)
+implicit none
+   real(8),intent(in) :: rab
+
+   real(8) :: e,rbh
+
+   e = b*exp(-a*rab)
+
+end function get_complex_energy_repulsion_part
+
+function get_complex_energy_attraction_part(rah,rab) result(e)
+implicit none
+   real(8),intent(in) :: rab,rah
+
+   real(8) :: e,rbh
+
+   rbh = rab - rah
+   e = d*(1-exp(-(na*(rah-da)**2)/(2d0*rah))) + c*d*(1-exp(-nb*(rbh-db)**2/(2d0*rbh)))
+
+end function get_complex_energy_attraction_part
+
 function get_complex_energy_with_H(pairs) result(e)
 implicit none
    real(8) :: e
