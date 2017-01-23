@@ -14,6 +14,7 @@ integer :: nMapStates
 
 real(8),dimension(:),allocatable :: eigenvalues
 real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
+real(8),dimension(:,:),allocatable :: pqAp,pqBp
 real(8),dimension(:,:),allocatable :: lambda,h
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
@@ -23,13 +24,14 @@ type(MdData) :: md
 type(BasisFunction),dimension(:),allocatable :: phiCov, phiIon, phi
 type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
 type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
+type(MatrixList),dimension(:),allocatable :: pirp
 type(vsl_stream_state) :: stream
 
 nBasisFunCov = 6
 nBasisFunIon = 6
 nBasisFun = nBasisFunCov + nBasisFunIon
 
-nMapStates = 4
+nMapStates = 3
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
@@ -58,6 +60,13 @@ allocate(VhMatrix(1:nBasisFun,1:nBasisFun))
 allocate(SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 
+allocate(pqAp(1:nBasisFun,1:nBasisFun))
+allocate(pqBp(1:nBasisFun,1:nBasisFun))
+allocate(pirp(1:nAtoms))
+do i = 1, nAtoms
+   allocate(pirp(i)%mat(1:nBasisFun,1:nBasisFun))
+end do
+
 allocate(eigenvalues(1:nMapStates))
 allocate(lambda(1:nBasisFun,1:nMapStates))
 allocate(h(1:nMapStates,1:nMapStates))
@@ -75,10 +84,7 @@ call write_generated_initial_positions_XYZ(cluster_initial)
 call get_distances_and_vectors(cluster_initial,atomPairs_initial)
 !get distances and vectors of all solvent atoms with H grid
 call get_H_grid_Atoms_pos_and_vec(gridHSolvent,atomPairs_initial)
-print '(3f12.5)', cluster_initial(1)%pos
-do i = 1, nPointsGrid+1
-   print '(f10.4,3f12.5)', gridHSolvent(1)%gridPoint(i)%rij, gridHSolvent(1)%gridPoint(i)%vectorij
-end do
+
 !call get_force_field_pair_parameters_with_H(cluster_initial,atomPairs_initial)
 call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 
@@ -95,11 +101,25 @@ call get_phi_Vsubsystem_phi_matrix(phi,atomPairs_initial(1,2)%rij,VhMatrix)
 HMatrix = KMatrix + VhMatrix
 call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
 
-call &
-get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,eigenvalues,lambda,Smatrix,Smatrix,Smatrix,h)
-print '(4f13.4)', eigenvalues
+call get_phi_q_ABS_phi_matrix(phi,pqAp,pqBp)
+call get_phi_inv_r_HS_phi_matrix(phi,gridHSolvent,pirp)
+
+call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,&
+                                 eigenvalues,lambda,pqAp,pqBp,pirp,h)
+print '(3f13.4)', eigenvalues
+!print *,''
+!print '(12f13.4)', lambda(1:12,1)
+!print *,''
+!print '(12f13.4)', pqAp
+!print *,''
+!print '(12f13.4)', pqBp
+!print *,''
+!do i = 1, nAtoms
+!print *, i
+!print '(12f13.4)', pirp(i)%mat
+!end do
 print *,''
-print '(12f13.4)', lambda(1:12,1)
+print *, h
 stop
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
