@@ -4,15 +4,13 @@ implicit none
 
 contains
 
-function get_complex_energy(pairs) result(e)
+function get_complex_energy(rah,rab) result(e)
 implicit none
-   real(8) :: e
-   real(8) :: rab,rah,rbh
-   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   real(8),intent(in) :: rab,rah
 
-   rab = pairs(1,2)%rij
-   rah = 1d0
-   rbh = pairs(1,2)%rij - rah
+   real(8) :: e,rbh
+
+   rbh = rab - rah
    e = b*exp(-a*rab)+d*(1-exp(-(na*(rah-da)**2)/(2d0*rah)))+c*d*(1-exp(-nb*(rbh-db)**2/(2d0*rbh)))
 end function get_complex_energy
 
@@ -166,7 +164,7 @@ implicit none
    real(8),intent(out) :: ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et
    type(AtomPairData),dimension(:,:),intent(in) :: pairs
    
-   ec = get_complex_energy(pairs)
+   ec = get_complex_energy(1d0,pairs(1,2)%rij)
    call get_complexsolvent_energy(pairs,ecslj,ecsel,ecst)
    call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
    et = ec + ecst + esst
