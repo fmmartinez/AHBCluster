@@ -28,6 +28,8 @@ implicit none
 
 end function
 
+!---matrix elements and matrix assembly
+!--- <phi | f | phi> matrix elements
 subroutine get_overlap_matrix(phi,S)
 implicit none
    real(8),dimension(:,:),intent(out) :: S
@@ -92,6 +94,129 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
+!--- <lambda | f | lambda > matrix elements
+subroutine get_lambda_h_lambda_matrix(at,pair,eigenval,lambda,pAp,pBp,pHp,h)
+implicit none
+   real(8),dimension(:),intent(in) :: eigenval
+   real(8),dimension(:,:),intent(in) :: lambda,pAp,pBp,pHp
+   real(8),dimension(:,:),intent(out) :: h
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   
+   integer :: i,m
+   real(8),dimension(:,:),allocatable :: vas,vbs,vhs
+
+   m = size(eigenval)
+   allocate(vas(1:m,1:m))
+   allocate(vbs(1:m,1:m))
+   allocate(vhs(1:m,1:m))
+
+   do i = 1, m
+      h(i,i) = eigenval(i)
+   end do
+   
+   call get_lambda_VASol_lambda_matrix(at,pair,lambda,pAp,vas)
+   call get_lambda_VBSol_lambda_matrix(at,pair,lambda,pBp,vbs)
+   !call get_lambda_VHSol_lambda_matrix(vhs)
+
+   h = h + vas + vbs !+ vhs
+
+   deallocate(vhs)
+   deallocate(vbs)
+   deallocate(vas)
+end subroutine get_lambda_h_lambda_matrix
+
+subroutine get_lambda_VASol_lambda_matrix(at,pair,lambda,phifphi,v)
+implicit none
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: v
+   
+   integer :: i,j,k,na,nb,nm
+   real(8) :: vc,prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   na = size(at)
+   nb = size(lambda,1)
+   nm = size(v,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   v = 0d0
+   do k = 3, na
+      prefactor = (kCoulomb*at(k)%charge/pair(1,k)%rij)
+      do i = 1, nm
+         do j = 1, nm
+            li = lambda(1:nb,i)
+            lj = lambda(1:nb,j)
+            vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+            v(i,j) = v(i,j) + vc
+         end do
+      end do
+      v = prefactor*v
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_VASol_lambda_matrix
+
+subroutine get_lambda_VBSol_lambda_matrix(at,pair,lambda,phifphi,v)
+implicit none
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: v
+   
+   integer :: i,j,k,na,nb,nm
+   real(8) :: vc,prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   na = size(at)
+   nb = size(lambda,1)
+   nm = size(v,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   v = 0d0
+   do k = 3, na
+      prefactor = (kCoulomb*at(k)%charge/pair(2,k)%rij)
+      do i = 1, nm
+         do j = 1, nm
+            li = lambda(1:nb,i)
+            lj = lambda(1:nb,j)
+            vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+            v(i,j) = v(i,j) + vc
+         end do
+      end do
+      v = prefactor*v
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_VBSol_lambda_matrix
+
+function get_lambda_f_lambda_matrix_element(l1,l2,phifphi) result(f)
+implicit none
+   real(8),dimension(:),intent(in) :: l1,l2
+   real(8),dimension(:,:),intent(in) :: phifphi
+   
+   integer :: nb,i,j
+   real(8) :: f
+
+   nb = size(l1)
+   
+   f = 0d0
+   do i = 1, nb
+      do j = 1, nb
+         f = f + l1(i)*phifphi(i,j)*l2(j)
+      end do
+   end do
+end function get_lambda_f_lambda_matrix_element
+
+!---basis functions preparation
 subroutine get_double_derivative_basis_functions_on_each_well(cov,ion)
 implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
@@ -138,6 +263,7 @@ implicit none
    end do
 end subroutine initialize_basis_functions_on_each_well
 
+!---elementary calculations
 function eval_harmonic_oscillator_wavefunction(i,dx) result(phi)
 implicit none
    integer,intent(in) :: i
@@ -243,6 +369,7 @@ implicit none
    end do
 end function eval_factorial
 
+!-- diagonalizations
 subroutine get_subsystem_lambdas(H,S,l,e)
 implicit none
    real(8),dimension(:),intent(out) :: e
