@@ -61,7 +61,7 @@ subroutine get_all_forces(pairs,force)
 
 end subroutine get_all_forces
 
-subroutine get_all_forces_pbme(at,pairs,lambda,pAHp,pBHp,pqAp,pqBp,pirp,mapFactor,force)
+subroutine get_all_forces_pbme(at,pairs,lambda,pAHp,pBHp,pqAp,pqBp,pir2p,mapFactor,force)
 use quantumcalculations
 use maproutines
 implicit none
@@ -70,7 +70,7 @@ implicit none
    type(Forces),intent(out) :: force
    type(AtomPairData),dimension(:,:),intent(in) :: pairs
    real(8),dimension(:,:),intent(in) :: lambda, pAHp, pBHp, pqAp, pqBp, mapFactor
-   type(MatrixList),dimension(:),intent(in) :: pirp
+   type(MatrixList),dimension(:),intent(in) :: pir2p
    
    integer :: i,j,n,nm
    real(8),dimension(:),allocatable :: forceHAtomTemp
@@ -119,7 +119,7 @@ implicit none
 
       !H vs S
       !this is saved in a temporal variable
-      call get_lambda_d_VHSol_lambda_matrix(at(j),lambda,pirp(j),dh)
+      call get_lambda_d_VHSol_lambda_matrix(at(j),lambda,pir2p(j),dh)
       forceHAtomTemp(j) = get_map_contribution(-dh,mapFactor)
    end do
    
@@ -137,6 +137,7 @@ implicit none
       end do
    end do
    
+   !add all forces due to interactions between atoms A, B and Solvent
    do i = 1, n
       do j = 1, i-1
          force%inAtom(i)%total = force%inAtom(i)%total + &
@@ -147,7 +148,22 @@ implicit none
                                  force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
       end do
    end do
-
+   !add forces due to interactions of A/B/Solvent with H wavefunction
+   !A vs H, unitary vector along A--B used
+   force%inAtom(1)%total = force%inAtom(1)%total + &
+                           forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij! +&
+                           !missing part from solvent-H interaction that gets
+                           ! distributed here
+   !B vs H, unitary vector along B--A used
+   force%inAtom(2)%total = force%inAtom(2)%total + &
+                           forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(1,2)%rij! +&
+                           !missing part from solvent-H interaction that gets
+                           ! distributed here
+   !S vs H
+   !do i = 3, n
+   !   force%inAtom(i)%total = force%inAtom(i)%total + &
+   !                           forceHAtomTemp(i)
+   !end do
 end subroutine get_all_forces_pbme
 
 subroutine get_all_forces_with_H(pairs,force)

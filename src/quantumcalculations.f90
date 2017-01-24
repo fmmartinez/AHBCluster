@@ -287,40 +287,6 @@ end subroutine get_lambda_VBSol_lambda_matrix
 
 !--- df stands for derivative with respect to R of f
 !---<lambda | df | lambda > matrix elements
-subroutine get_lambda_d_VHSol_lambda_matrix(at,lambda,phifphi,dv)
-implicit none
-   real(8),parameter :: hCharge = 0.5d0
-   type(Atom),intent(in) :: at
-   type(MatrixList),intent(in) :: phifphi
-   real(8),dimension(:,:),intent(in) :: lambda
-   real(8),dimension(:,:),intent(out) :: dv
-   
-   integer :: i,j,nb,nm
-   real(8) :: vc,prefactor
-   real(8),dimension(:),allocatable :: li,lj
-   
-   nb = size(lambda,1)
-   nm = size(dv,1)
-   
-   allocate(li(1:nb))
-   allocate(lj(1:nb))
-
-   dv = 0d0
-   prefactor = -kCoulomb*at%charge*hCharge
-   do i = 1, nm
-      do j = 1, nm
-         li = lambda(1:nb,i)
-         lj = lambda(1:nb,j)
-         !notice that phifphi enters as 1/r, for derivative we require 1/r^2 
-         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi%mat**2)
-         dv(i,j) = dv(i,j) + prefactor*vc
-      end do
-   end do
-   
-   deallocate(lj)
-   deallocate(li)
-end subroutine get_lambda_d_VHSol_lambda_matrix
-
 subroutine get_lambda_d_VASol_lambda_matrix(at,pair,lambda,phifphi,dv)
 implicit none
    type(Atom),intent(in) :: at
@@ -384,6 +350,41 @@ implicit none
    deallocate(lj)
    deallocate(li)
 end subroutine get_lambda_d_VBSol_lambda_matrix
+
+subroutine get_lambda_d_VHSol_lambda_matrix(at,lambda,phifphi,dv)
+!phifphi is a generic name, in this case stored in that variable is
+!<phi| 1/r^2 |phi>
+implicit none
+   real(8),parameter :: hCharge = 0.5d0
+   type(Atom),intent(in) :: at
+   type(MatrixList),intent(in) :: phifphi
+   real(8),dimension(:,:),intent(in) :: lambda
+   real(8),dimension(:,:),intent(out) :: dv
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc,prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(lambda,1)
+   nm = size(dv,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   dv = 0d0
+   prefactor = -kCoulomb*at%charge*hCharge
+   do i = 1, nm
+      do j = 1, nm
+         li = lambda(1:nb,i)
+         lj = lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi%mat)
+         dv(i,j) = dv(i,j) + prefactor*vc
+      end do
+   end do
+   
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_d_VHSol_lambda_matrix
 
 subroutine get_lambda_d_VAH_lambda_matrix(lambda,phifphi,dv)
 implicit none
