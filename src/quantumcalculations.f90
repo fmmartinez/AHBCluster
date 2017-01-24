@@ -50,6 +50,7 @@ implicit none
    end do
 end subroutine get_overlap_matrix
 
+!---These are used to construct the subsystem and diagonalize
 subroutine get_phi_KineticEnergy_phi_matrix(phi,d2p,K)
 implicit none
    real(8),dimension(:,:),intent(out) :: K 
@@ -95,6 +96,7 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
+!---various matrix elements used through energy and force calculations
 subroutine get_phi_charge_AB_phi_matrix(phi,A,B)
 implicit none
    real(8),dimension(:,:),intent(out) :: A,B
@@ -145,6 +147,31 @@ implicit none
       end do
    end do
 end subroutine get_phi_inv_r_HS_phi_matrix
+
+subroutine get_phi_inv_r2_HS_phi_matrix(phi,HSData,inv2)
+implicit none
+   type(EvalOnGridHData),dimension(:),intent(in) :: HSData
+   type(MatrixList),dimension(:),intent(inout) :: inv2
+   type(BasisFunction),dimension(:),intent(in) :: phi
+   
+   integer :: i,j,k,n,nAtoms
+   type(EvalOnGridFunction) :: inverse_rHS_2
+   
+   n = size(phi)
+   nAtoms = size(inv2)
+
+   do k = 1, nAtoms
+      do i = 1, nPointsGrid+1
+         inverse_rHS_2%gridPointValue(i) = 1d0/(HSData(k)%gridPoint(i)%rij**2)
+      end do
+      
+      do i = 1, n
+         do j = 1, n
+            inv2(k)%mat(i,j) = integrate_trapezoid_rule(phi(i),inverse_rHS_2,phi(j))
+         end do
+      end do
+   end do
+end subroutine get_phi_inv_r2_HS_phi_matrix
 
 !--- <lambda | f | lambda > matrix elements
 subroutine get_lambda_h_lambda_matrix(at,pair,eigenval,lambda,pAp,pBp,pHp,h)
