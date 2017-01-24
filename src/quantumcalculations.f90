@@ -385,6 +385,64 @@ implicit none
    deallocate(li)
 end subroutine get_lambda_d_VBSol_lambda_matrix
 
+subroutine get_lambda_d_VAH_lambda_matrix(lambda,phifphi,dv)
+implicit none
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: dv
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc 
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(lambda,1)
+   nm = size(dv,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   dv = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         li = lambda(1:nb,i)
+         lj = lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+         dv(i,j) = dv(i,j) + vc
+      end do
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_d_VAH_lambda_matrix
+
+subroutine get_lambda_d_VBH_lambda_matrix(lambda,phifphi,dv)
+implicit none
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: dv
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc 
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(lambda,1)
+   nm = size(dv,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   dv = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         li = lambda(1:nb,i)
+         lj = lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+         dv(i,j) = dv(i,j) + vc
+      end do
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_d_VBH_lambda_matrix
+
 !---individual  <lambda | f | lambda > matrix elements calculator
 function get_lambda_f_lambda_matrix_element(l1,l2,phifphi) result(f)
 implicit none

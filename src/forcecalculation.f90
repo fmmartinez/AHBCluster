@@ -61,7 +61,7 @@ subroutine get_all_forces(pairs,force)
 
 end subroutine get_all_forces
 
-subroutine get_all_forces_pbme(at,pairs,lambda,pqAp,pqBp,pirp,mapFactor,force)
+subroutine get_all_forces_pbme(at,pairs,lambda,pAHp,pBHp,pqAp,pqBp,pirp,mapFactor,force)
 use quantumcalculations
 use maproutines
 implicit none
@@ -69,7 +69,7 @@ implicit none
    type(Atom),dimension(:),intent(in) :: at
    type(Forces),intent(out) :: force
    type(AtomPairData),dimension(:,:),intent(in) :: pairs
-   real(8),dimension(:,:),intent(in) :: lambda, pqAp, pqBp, mapFactor
+   real(8),dimension(:,:),intent(in) :: lambda, pAHp, pBHp, pqAp, pqBp, mapFactor
    type(MatrixList),dimension(:),intent(in) :: pirp
    
    integer :: i,j,n,nm
@@ -94,8 +94,10 @@ implicit none
    force%atomPair(1,2) = get_AB_force(pairs(1,2)%rij)
    force%atomPair(2,1) = force%atomPair(1,2)
       !these are forces due to the proton
-   !forceHAtomTemp(1) =
-   !forceHAtomTemp(2) =
+   call get_lambda_d_VAH_lambda_matrix(lambda,pAHp,dh)
+   forceHAtomTemp(1) = get_map_contribution(-dh,mapFactor)
+   call get_lambda_d_VBH_lambda_matrix(lambda,pBHp,dh)
+   forceHAtomTemp(2) = get_map_contribution(-dh,mapFactor)
 
    !AB vs S
    do j = 3, n
