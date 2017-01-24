@@ -101,30 +101,18 @@ call get_phi_Vsubsystem_phi_matrix(phi,atomPairs_initial(1,2)%rij,VhMatrix)
 HMatrix = KMatrix + VhMatrix
 call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
 
+!call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_q_ABS_phi_matrix(phi,pqAp,pqBp)
 call get_phi_inv_r_HS_phi_matrix(phi,gridHSolvent,pirp)
 
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,&
                                  eigenvalues,lambda,pqAp,pqBp,pirp,h)
 print '(3f13.4)', eigenvalues
-!print *,''
-!print '(12f13.4)', lambda(1:12,1)
-!print *,''
-!print '(12f13.4)', pqAp
-!print *,''
-!print '(12f13.4)', pqBp
-!print *,''
-!do i = 1, nAtoms
-!print *, i
-!print '(12f13.4)', pirp(i)%mat
-!end do
 print *,''
 print *, h
 stop
 
-!call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
-
-call get_all_forces(atomPairs_initial,force_initial)
+!call get_all_forces(atomPairs_initial,force_initial)
 
 do i = 1, md%nTrajectories
    cluster = cluster_initial

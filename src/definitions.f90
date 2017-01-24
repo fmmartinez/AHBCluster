@@ -30,6 +30,8 @@ real(8),parameter :: kBoltzmann = 0.831446d0
    !Boltzmann constant in amu*(A/ps)**2*K
 real(8),parameter :: KtoKcalMol = 0.00239d0
    !units of (Kcal/mol)*(ps**2/A**2)/amu
+real(8),parameter :: hbar = 0.01518d0
+   !hbar constant in (Kcal/mol)*ps
 real(8),parameter :: toleranceConstraints = 1d-7
 real(8),parameter :: constrainedRS = 1.781d0
 
