@@ -89,4 +89,8 @@ type MatrixList
    real(8),dimension(:,:),allocatable :: mat
 end type MatrixList
 
+type VectorForMatrix
+   real(8),dimension(1:3) :: vecij
+end type VectorForMatrix
+
 end module definitions
