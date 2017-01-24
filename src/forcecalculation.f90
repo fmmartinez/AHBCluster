@@ -61,7 +61,7 @@ subroutine get_all_forces(pairs,force)
 
 end subroutine get_all_forces
 
-subroutine get_all_forces_pbme(at,pairs,lambda,pqAp,mapFactor,force)
+subroutine get_all_forces_pbme(at,pairs,lambda,pqAp,pqBp,pirp,mapFactor,force)
 use quantumcalculations
 use maproutines
 implicit none
@@ -69,26 +69,33 @@ implicit none
    type(Atom),dimension(:),intent(in) :: at
    type(Forces),intent(out) :: force
    type(AtomPairData),dimension(:,:),intent(in) :: pairs
-   real(8),dimension(:,:),intent(in) :: lambda, pqAp, mapFactor
+   real(8),dimension(:,:),intent(in) :: lambda, pqAp, pqBp, mapFactor
+   type(MatrixList),dimension(:),intent(in) :: pirp
    
    integer :: i,j,n,nm
+   real(8),dimension(:),allocatable :: forceHAtomTemp
    real(8),dimension(:,:),allocatable :: dh
 
    n = size(force%inAtom)
    nm = size(mapFactor,1)
 
    allocate(dh(1:nm,1:nm))
+   allocate(forceHAtomTemp(1:n))
 
    do i = 1, n
       force%inAtom(i)%total = [0d0,0d0,0d0]
+      forceHAtomTemp = 0d0
       do j = 1, n
          force%atomPair(i,j) = 0d0
       end do
    end do
 
    !complex forces   
-   force%atomPair(1,2) = get_AB_force(pairs(1,2)%rij) + get_BH_force(pairs(1,2)%rij-1d0)
+   force%atomPair(1,2) = get_AB_force(pairs(1,2)%rij)
    force%atomPair(2,1) = force%atomPair(1,2)
+      !these are forces due to the proton
+   !forceHAtomTemp(1) =
+   !forceHAtomTemp(2) =
 
    !AB vs S
    do j = 3, n
@@ -103,10 +110,15 @@ implicit none
       !B vs S
       i = 2
       force%atomPair(i,j) = get_lj_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%rij)
-      call get_lambda_d_VBSol_lambda_matrix(at(j),pairs(i,j),lambda,pqAp,dh)
+      call get_lambda_d_VBSol_lambda_matrix(at(j),pairs(i,j),lambda,pqBp,dh)
       force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dh,mapFactor)
      
       force%atomPair(j,i) = force%atomPair(i,j)
+
+      !H vs S
+      !this is saved in a temporal variable
+      call get_lambda_d_VHSol_lambda_matrix(at(j),lambda,pirp(j),dh)
+      forceHAtomTemp(j) = get_map_contribution(-dh,mapFactor)
    end do
    
    !S vs S
@@ -114,8 +126,10 @@ implicit none
       force%atomPair(i,i+1) = 0d0!get_SS_bond_force(pairs(i,i+1)%rij)
       force%atomPair(i+1,i) = force%atomPair(i,i+1)
       do j = i+2, n
-         force%atomPair(i,j) = get_ljelec_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
-         force%atomPair(i+1,j) = get_ljelec_force(pairs(i+1,j)%ljEps,pairs(i+1,j)%ljSig,pairs(i+1,j)%qq,pairs(i+1,j)%rij)
+         force%atomPair(i,j) = get_ljelec_force(&
+                                 pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%qq,pairs(i,j)%rij)
+         force%atomPair(i+1,j) = get_ljelec_force(&
+                                 pairs(i+1,j)%ljEps,pairs(i+1,j)%ljSig,pairs(i+1,j)%qq,pairs(i+1,j)%rij)
          force%atomPair(j,i) = force%atomPair(i,j)
          force%atomPair(j,i+1) = force%atomPair(i+1,j)
       end do

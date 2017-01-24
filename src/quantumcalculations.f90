@@ -290,16 +290,15 @@ end subroutine get_lambda_VBSol_lambda_matrix
 subroutine get_lambda_d_VHSol_lambda_matrix(at,lambda,phifphi,dv)
 implicit none
    real(8),parameter :: hCharge = 0.5d0
-   type(Atom),dimension(:),intent(in) :: at
-   type(MatrixList),dimension(:),intent(in) :: phifphi
+   type(Atom),intent(in) :: at
+   type(MatrixList),intent(in) :: phifphi
    real(8),dimension(:,:),intent(in) :: lambda
    real(8),dimension(:,:),intent(out) :: dv
    
-   integer :: i,j,k,na,nb,nm
+   integer :: i,j,nb,nm
    real(8) :: vc,prefactor
    real(8),dimension(:),allocatable :: li,lj
    
-   na = size(at)
    nb = size(lambda,1)
    nm = size(dv,1)
    
@@ -307,16 +306,14 @@ implicit none
    allocate(lj(1:nb))
 
    dv = 0d0
-   do k = 3, na
-      prefactor = kCoulomb*at(k)%charge*hCharge
-      do i = 1, nm
-         do j = 1, nm
-            li = lambda(1:nb,i)
-            lj = lambda(1:nb,j)
-            !notice that phifphi enters as 1/r, for derivative we require 1/r^2 
-            vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi(k)%mat**2)
-            dv(i,j) = dv(i,j) + prefactor*vc
-         end do
+   prefactor = -kCoulomb*at%charge*hCharge
+   do i = 1, nm
+      do j = 1, nm
+         li = lambda(1:nb,i)
+         lj = lambda(1:nb,j)
+         !notice that phifphi enters as 1/r, for derivative we require 1/r^2 
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi%mat**2)
+         dv(i,j) = dv(i,j) + prefactor*vc
       end do
    end do
    
@@ -342,7 +339,7 @@ implicit none
    allocate(lj(1:nb))
 
    dv = 0d0
-   prefactor = kCoulomb*at%charge/pair%rij**2
+   prefactor = -kCoulomb*at%charge/pair%rij**2
    do i = 1, nm
       do j = 1, nm
          li = lambda(1:nb,i)
@@ -374,7 +371,7 @@ implicit none
    allocate(lj(1:nb))
 
    dv = 0d0
-   prefactor = kCoulomb*at%charge/pair%rij**2
+   prefactor = -kCoulomb*at%charge/pair%rij**2
    do i = 1, nm
       do j = 1, nm
          li = lambda(1:nb,i)
