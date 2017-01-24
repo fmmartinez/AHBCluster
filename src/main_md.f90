@@ -102,7 +102,7 @@ HMatrix = KMatrix + VhMatrix
 call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
-call get_phi_q_ABS_phi_matrix(phi,pqAp,pqBp)
+call get_phi_charge_AB_phi_matrix(phi,pqAp,pqBp)
 call get_phi_inv_r_HS_phi_matrix(phi,gridHSolvent,pirp)
 
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,&

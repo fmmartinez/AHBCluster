@@ -95,7 +95,7 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
-subroutine get_phi_q_ABS_phi_matrix(phi,A,B)
+subroutine get_phi_charge_AB_phi_matrix(phi,A,B)
 implicit none
    real(8),dimension(:,:),intent(out) :: A,B
    type(basisFunction),dimension(:),intent(in) :: phi
@@ -119,7 +119,7 @@ implicit none
          B(i,j) = integrate_trapezoid_rule(phi(i),qB,phi(j))
       end do
    end do
-end subroutine get_phi_q_ABS_phi_matrix
+end subroutine get_phi_charge_AB_phi_matrix
 
 subroutine get_phi_inv_r_HS_phi_matrix(phi,HSData,H)
 implicit none
