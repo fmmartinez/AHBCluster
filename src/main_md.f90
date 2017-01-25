@@ -7,15 +7,18 @@ use dynamicsroutines
 use stateevaluation
 use forcecalculation
 use quantumcalculations
+use maproutines
 implicit none
 
 integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
 integer :: nMapStates
 
+real(8),dimension(1:3) :: forceCCoM_initial
 real(8),dimension(:),allocatable :: eigenvalues
 real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
-real(8),dimension(:,:),allocatable :: pqAp,pqBp
-real(8),dimension(:,:),allocatable :: lambda,h
+real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
+real(8),dimension(:,:),allocatable :: pqp,lql
+real(8),dimension(:,:),allocatable :: lambda,h,mapFactor
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
@@ -25,13 +28,14 @@ type(BasisFunction),dimension(:),allocatable :: phiCov, phiIon, phi
 type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
 type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
 type(MatrixList),dimension(:),allocatable :: pirp
+type(MatrixList),dimension(:,:),allocatable :: pir2p
 type(vsl_stream_state) :: stream
 
 nBasisFunCov = 6
 nBasisFunIon = 6
 nBasisFun = nBasisFunCov + nBasisFunIon
 
-nMapStates = 3
+nMapStates = 1
 
 call read_md_input_file(nAtoms,md)
 errcode = vslnewstream(stream,brng,md%seed)
@@ -66,10 +70,22 @@ allocate(pirp(1:nAtoms))
 do i = 1, nAtoms
    allocate(pirp(i)%mat(1:nBasisFun,1:nBasisFun))
 end do
+allocate(pir2p(1:nAtoms,1:3))
+do i = 1, nAtoms
+   allocate(pir2p(i,1)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
+end do
+allocate(pAHp(1:nBasisFun,1:nBasisFun))
+allocate(pBHp(1:nBasisFun,1:nBasisFun))
+
+allocate(pqp(1:nBasisFun,1:nBasisFun))
+allocate(lql(1:nMapStates,1:nMapStates))
 
 allocate(eigenvalues(1:nMapStates))
 allocate(lambda(1:nBasisFun,1:nMapStates))
 allocate(h(1:nMapStates,1:nMapStates))
+allocate(mapFactor(1:nMapStates,1:nMapStates))
 
 !call read_force_field_file(cluster)
 !call initialize_force_field_explicit_H(cluster_initial)
@@ -104,15 +120,33 @@ call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(phi,pqAp,pqBp)
 call get_phi_inv_r_HS_phi_matrix(phi,gridHSolvent,pirp)
-
+!h matrix
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,&
                                  eigenvalues,lambda,pqAp,pqBp,pirp,h)
-print '(3f13.4)', eigenvalues
+
+call get_phi_d_VAH_phi_matrix(phi,pAHp)
+call get_phi_d_VBH_phi_matrix(phi,atomPairs_initial(1,2)%rij,pBHp)
+call get_phi_inv_r2_HS_phi_matrix(phi,gridHSolvent,pir2p)
+
+mapFactor = 1d0
+!forces
+call get_all_forces_pbme(cluster_initial,atomPairs_initial,lambda,pAHp,pBHp,&
+                        pqAp,pqBp,pir2p,mapFactor,force_initial,forceCCoM_initial)
+
+
+call get_phi_q_phi_matrix(phi,gridHSolvent,pqp)
+call get_lambda_q_lambda_matrix(lambda,pqp,lql)
+!print *, 'qm',get_map_contribution(lql,mapFactor)
+!
+!print '(3f13.4)', eigenvalues
+!print *,''
+!print *, h
 print *,''
-print *, h
+print *, sum(force_initial%inAtom%total(1)) + forceCCoM_initial(1)
+print *, sum(force_initial%inAtom%total(2)) + forceCCoM_initial(2)
+print *, sum(force_initial%inAtom%total(3)) + forceCCoM_initial(3)
 stop
 
-!call get_all_forces(atomPairs_initial,force_initial)
 
 do i = 1, md%nTrajectories
    cluster = cluster_initial

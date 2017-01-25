@@ -5,7 +5,7 @@ implicit none
 contains
 
 subroutine get_all_forces(pairs,force)
-   implicit none
+implicit none
    
    integer :: i,j,n
 
@@ -61,29 +61,38 @@ subroutine get_all_forces(pairs,force)
 
 end subroutine get_all_forces
 
-subroutine get_all_forces_pbme(at,pairs,lambda,pAHp,pBHp,pqAp,pqBp,pir2p,mapFactor,force)
+subroutine get_all_forces_pbme(at,pairs,lambda,pAHp,pBHp,pqAp,pqBp,pir2p,mapFactor,force,forceAtComplexCoM)
+!summary of cryptic names
+!pir2p = <phi|1/r^2|phi> matrix (r is of H with all solvent atoms)
 use quantumcalculations
 use maproutines
 implicit none
    
    type(Atom),dimension(:),intent(in) :: at
-   type(Forces),intent(out) :: force
+   type(Forces),intent(inout) :: force
    type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   real(8),dimension(1:3),intent(out) :: forceAtComplexCoM
    real(8),dimension(:,:),intent(in) :: lambda, pAHp, pBHp, pqAp, pqBp, mapFactor
-   type(MatrixList),dimension(:),intent(in) :: pir2p
+   type(MatrixList),dimension(:,:),intent(in) :: pir2p
    
    integer :: i,j,n,nm
+   type(VectorForMatrix),dimension(:),allocatable :: forceVecHAtomTemp
    real(8),dimension(:),allocatable :: forceHAtomTemp
-   real(8),dimension(:,:),allocatable :: dh
+   real(8),dimension(:,:),allocatable :: dh,dhx,dhy,dhz
 
    n = size(force%inAtom)
    nm = size(mapFactor,1)
 
    allocate(dh(1:nm,1:nm))
+   allocate(dhx(1:nm,1:nm))
+   allocate(dhy(1:nm,1:nm))
+   allocate(dhz(1:nm,1:nm))
    allocate(forceHAtomTemp(1:n))
+   allocate(forceVecHAtomTemp(1:n))
 
    do i = 1, n
       force%inAtom(i)%total = [0d0,0d0,0d0]
+      forceVecHAtomTemp(i)%vecij = [0d0,0d0,0d0]
       forceHAtomTemp = 0d0
       do j = 1, n
          force%atomPair(i,j) = 0d0
@@ -96,9 +105,11 @@ implicit none
       !these are forces due to the proton
    call get_lambda_d_VAH_lambda_matrix(lambda,pAHp,dh)
    forceHAtomTemp(1) = get_map_contribution(-dh,mapFactor)
+   forceAtComplexCoM = -forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij
    call get_lambda_d_VBH_lambda_matrix(lambda,pBHp,dh)
    forceHAtomTemp(2) = get_map_contribution(-dh,mapFactor)
-
+   forceAtComplexCoM = forceAtComplexCoM + (-forceHAtomTemp(2)*pairs(1,2)%vectorij)/pairs(2,1)%rij
+   
    !AB vs S
    do j = 3, n
       !A vs S
@@ -119,8 +130,12 @@ implicit none
 
       !H vs S
       !this is saved in a temporal variable
-      call get_lambda_d_VHSol_lambda_matrix(at(j),lambda,pir2p(j),dh)
-      forceHAtomTemp(j) = get_map_contribution(-dh,mapFactor)
+      call get_lambda_d_VHSol_lambda_matrix(at(j),lambda,pir2p(j,1:3),dhx,dhy,dhz)
+      forceVecHAtomTemp(j)%vecij(1) = get_map_contribution(-dhx,mapFactor)
+      forceVecHAtomTemp(j)%vecij(2) = get_map_contribution(-dhy,mapFactor)
+      forceVecHAtomTemp(j)%vecij(3) = get_map_contribution(-dhz,mapFactor)
+      forceHAtomTemp(j) = sum(forceVecHAtomTemp(j)%vecij**2)
+      forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
    end do
    
    !S vs S
@@ -148,22 +163,18 @@ implicit none
                                  force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
       end do
    end do
+
    !add forces due to interactions of A/B/Solvent with H wavefunction
    !A vs H, unitary vector along A--B used
    force%inAtom(1)%total = force%inAtom(1)%total + &
-                           forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij! +&
-                           !missing part from solvent-H interaction that gets
-                           ! distributed here
+                           forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij
    !B vs H, unitary vector along B--A used
    force%inAtom(2)%total = force%inAtom(2)%total + &
-                           forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(1,2)%rij! +&
-                           !missing part from solvent-H interaction that gets
-                           ! distributed here
+                           forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(1,2)%rij
    !S vs H
-   !do i = 3, n
-   !   force%inAtom(i)%total = force%inAtom(i)%total + &
-   !                           forceHAtomTemp(i)
-   !end do
+   do i = 3, n
+      force%inAtom(i)%total = force%inAtom(i)%total + forceVecHAtomTemp(i)%vecij
+   end do
 end subroutine get_all_forces_pbme
 
 subroutine get_all_forces_with_H(pairs,force)

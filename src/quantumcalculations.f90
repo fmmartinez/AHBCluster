@@ -96,6 +96,28 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
+subroutine get_phi_q_phi_matrix(phi,HSData,H)
+implicit none
+   type(EvalOnGridHData),dimension(:),intent(in) :: HSData
+   real(8),dimension(:,:),intent(inout) :: H
+   type(BasisFunction),dimension(:),intent(in) :: phi
+   
+   integer :: i,j,k,n
+   type(EvalOnGridFunction) :: rHS
+   
+   n = size(phi)
+
+   do i = 1, nPointsGrid+1
+      rHS%gridPointValue(i) = HSData(1)%gridPoint(i)%rij
+   end do
+   
+   do i = 1, n
+      do j = 1, n
+         H(i,j) = integrate_trapezoid_rule(phi(i),rHS,phi(j))
+      end do
+   end do
+end subroutine get_phi_q_phi_matrix
+
 !---various matrix elements used through energy and force calculations
 subroutine get_phi_charge_AB_phi_matrix(phi,A,B)
 implicit none
@@ -123,6 +145,59 @@ implicit none
    end do
 end subroutine get_phi_charge_AB_phi_matrix
 
+subroutine get_phi_d_VAH_phi_matrix(phi,V)
+implicit none
+   real(8),dimension(:,:),intent(out) :: V
+   type(basisFunction),dimension(:),intent(in) :: phi
+   
+   integer :: i,j,n
+   real(8) :: q,rah
+   type(EvalOnGridFunction) :: vh
+
+   do i = 1, nPointsGrid+1
+      q = lowerLimit + (i-1)*binWidth
+      rah = q
+      vh%gridPointValue(i) = &
+         -d*exp(-na*(rah-da)**2/(2d0*rah))*(na*(rah-da)/rah)*((rah-da)/(2d0*rah)-1d0)
+   end do
+
+   n = size(phi)
+
+   do i = 1, n
+      do j = 1, n
+         V(i,j) = integrate_trapezoid_rule(phi(i),vh,phi(j))
+      end do
+   end do
+
+end subroutine get_phi_d_VAH_phi_matrix
+
+subroutine get_phi_d_VBH_phi_matrix(phi,rab,V)
+implicit none
+   real(8),intent(in) :: rab
+   real(8),dimension(:,:),intent(out) :: V
+   type(basisFunction),dimension(:),intent(in) :: phi
+   
+   integer :: i,j,n
+   real(8) :: q,rbh
+   type(EvalOnGridFunction) :: vh
+
+   do i = 1, nPointsGrid+1
+      q = lowerLimit + (i-1)*binWidth
+      rbh = rab - q
+      vh%gridPointValue(i) = &
+         -c*d*exp(-nb*(rbh-db)**2/(2d0*rbh))*(nb*(rbh-db)/rbh)*((rbh-db)/(2d0*rbh)-1d0)
+   end do
+
+   n = size(phi)
+
+   do i = 1, n
+      do j = 1, n
+         V(i,j) = integrate_trapezoid_rule(phi(i),vh,phi(j))
+      end do
+   end do
+
+end subroutine get_phi_d_VBH_phi_matrix
+
 subroutine get_phi_inv_r_HS_phi_matrix(phi,HSData,H)
 implicit none
    type(EvalOnGridHData),dimension(:),intent(in) :: HSData
@@ -149,25 +224,29 @@ implicit none
 end subroutine get_phi_inv_r_HS_phi_matrix
 
 subroutine get_phi_inv_r2_HS_phi_matrix(phi,HSData,inv2)
+!inv2 is a vector
 implicit none
    type(EvalOnGridHData),dimension(:),intent(in) :: HSData
-   type(MatrixList),dimension(:),intent(inout) :: inv2
+   type(MatrixList),dimension(:,:),intent(inout) :: inv2
    type(BasisFunction),dimension(:),intent(in) :: phi
    
    integer :: i,j,k,n,nAtoms
-   type(EvalOnGridFunction) :: inverse_rHS_2
+   type(EvalOnGridFunction),dimension(1:3) :: inverse_rHS_2
    
    n = size(phi)
-   nAtoms = size(inv2)
+   nAtoms = size(inv2,1)
 
    do k = 1, nAtoms
       do i = 1, nPointsGrid+1
-         inverse_rHS_2%gridPointValue(i) = 1d0/(HSData(k)%gridPoint(i)%rij**2)
+         !negative make pointing from grid to atom
+         inverse_rHS_2%gridPointValue(i) = -HSData(k)%gridPoint(i)%vectorij/(HSData(k)%gridPoint(i)%rij**3)
       end do
       
       do i = 1, n
          do j = 1, n
-            inv2(k)%mat(i,j) = integrate_trapezoid_rule(phi(i),inverse_rHS_2,phi(j))
+            inv2(k,1)%mat(i,j) = integrate_trapezoid_rule(phi(i),inverse_rHS_2(1),phi(j))
+            inv2(k,2)%mat(i,j) = integrate_trapezoid_rule(phi(i),inverse_rHS_2(2),phi(j))
+            inv2(k,3)%mat(i,j) = integrate_trapezoid_rule(phi(i),inverse_rHS_2(3),phi(j))
          end do
       end do
    end do
@@ -312,6 +391,35 @@ implicit none
    deallocate(li)
 end subroutine get_lambda_VBSol_lambda_matrix
 
+subroutine get_lambda_q_lambda_matrix(lambda,phifphi,v)
+implicit none
+   real(8),dimension(:,:),intent(in) :: lambda, phifphi
+   real(8),dimension(:,:),intent(out) :: v
+   
+   integer :: i,j,b,nb,nm
+   real(8) :: vc
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(lambda,1)
+   nm = size(v,1)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   v = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         li = lambda(1:nb,i)
+         lj = lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi)
+         v(i,j) = v(i,j) + vc
+      end do
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_q_lambda_matrix
+
 !--- df stands for derivative with respect to R of f
 !---<lambda | df | lambda > matrix elements
 subroutine get_lambda_d_VASol_lambda_matrix(at,pair,lambda,phifphi,dv)
@@ -353,7 +461,7 @@ implicit none
    real(8),dimension(:,:),intent(in) :: lambda, phifphi
    real(8),dimension(:,:),intent(out) :: dv
    
-   integer :: i,j,k,nb,nm
+   integer :: i,j,nb,nm
    real(8) :: vc, prefactor
    real(8),dimension(:),allocatable :: li,lj
    
@@ -378,34 +486,40 @@ implicit none
    deallocate(li)
 end subroutine get_lambda_d_VBSol_lambda_matrix
 
-subroutine get_lambda_d_VHSol_lambda_matrix(at,lambda,phifphi,dv)
+subroutine get_lambda_d_VHSol_lambda_matrix(at,lambda,phifphi,dvx,dvy,dvz)
 !phifphi is a generic name, in this case stored in that variable is
-!<phi| 1/r^2 |phi>
+!<phi| rvec/r^3 |phi>
 implicit none
    real(8),parameter :: hCharge = 0.5d0
    type(Atom),intent(in) :: at
-   type(MatrixList),intent(in) :: phifphi
+   type(MatrixList),dimension(:),intent(in) :: phifphi
    real(8),dimension(:,:),intent(in) :: lambda
-   real(8),dimension(:,:),intent(out) :: dv
+   real(8),dimension(:,:),intent(out) :: dvx,dvy,dvz
    
    integer :: i,j,nb,nm
    real(8) :: vc,prefactor
    real(8),dimension(:),allocatable :: li,lj
    
    nb = size(lambda,1)
-   nm = size(dv,1)
+   nm = size(dvx,1)
    
    allocate(li(1:nb))
    allocate(lj(1:nb))
 
-   dv = 0d0
+   dvx = 0d0
+   dvy = 0d0
+   dvz = 0d0
    prefactor = -kCoulomb*at%charge*hCharge
    do i = 1, nm
       do j = 1, nm
          li = lambda(1:nb,i)
          lj = lambda(1:nb,j)
-         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi%mat)
-         dv(i,j) = dv(i,j) + prefactor*vc
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi(1)%mat)
+         dvx(i,j) = dvx(i,j) + prefactor*vc
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi(2)%mat)
+         dvy(i,j) = dvy(i,j) + prefactor*vc
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phifphi(3)%mat)
+         dvz(i,j) = dvz(i,j) + prefactor*vc
       end do
    end do
    
