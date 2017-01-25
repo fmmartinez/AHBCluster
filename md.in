@@ -1,5 +1,5 @@
-nAtoms
-26
+nAtoms nBasisFunCov nBasisFunIon nMapStates
+26     6            6            3
 seed nTrajectories
 4    2
 timeStep

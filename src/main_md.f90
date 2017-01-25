@@ -31,14 +31,11 @@ type(MatrixList),dimension(:),allocatable :: pirp
 type(MatrixList),dimension(:,:),allocatable :: pir2p
 type(vsl_stream_state) :: stream
 
-nBasisFunCov = 6
-nBasisFunIon = 6
-nBasisFun = nBasisFunCov + nBasisFunIon
 
-nMapStates = 1
-
-call read_md_input_file(nAtoms,md)
+call read_md_input_file(nAtoms,nBasisFunCov,nBasisFunIon,nMapStates,md)
 errcode = vslnewstream(stream,brng,md%seed)
+
+nBasisFun = nBasisFunCov + nBasisFunIon
 
 allocate(cluster(1:nAtoms))
 allocate(atomPairs(1:nAtoms,1:nAtoms))
