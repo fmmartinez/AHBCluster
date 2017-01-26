@@ -560,6 +560,74 @@ implicit none
    deallocate(li)
 end subroutine get_lambda_d_VHSol_lambda_matrix
 
+subroutine get_lambda_d_VCoMSol_lambda_matrix(k,at,p,dv)
+implicit none
+   real(8),parameter :: chargeH = 0.5d0
+   
+   integer,intent(in) :: k
+   type(Atom),intent(in) :: at
+   type(QuantumStateData),intent(in) :: p
+   real(8),dimension(:,:),intent(out) :: dv
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc, prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(p%lambda,1)
+   nm = size(p%eigenvalues)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   dv = 0d0
+   prefactor = -kCoulomb*at%charge*chargeH
+   do i = 1, nm
+      do j = 1, nm
+         li = p%lambda(1:nb,i)
+         lj = p%lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,p%pir3p(k)%mat)
+         dv(i,j) = dv(i,j) + prefactor*vc
+      end do
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_d_VCoMSol_lambda_matrix
+
+subroutine get_lambda_d_VCoMH_lambda_matrix(k,at,p,dv)
+implicit none
+   real(8),parameter :: chargeH = 0.5d0
+   
+   integer,intent(in) :: k
+   type(Atom),intent(in) :: at
+   type(QuantumStateData),intent(in) :: p
+   real(8),dimension(:,:),intent(out) :: dv
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc, prefactor
+   real(8),dimension(:),allocatable :: li,lj
+   
+   nb = size(p%lambda,1)
+   nm = size(p%eigenvalues)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+
+   dv = 0d0
+   prefactor = -kCoulomb*at%charge*chargeH
+   do i = 1, nm
+      do j = 1, nm
+         li = p%lambda(1:nb,i)
+         lj = p%lambda(1:nb,j)
+         vc = get_lambda_f_lambda_matrix_element(li,lj,p%pcr3p(k)%mat)
+         dv(i,j) = dv(i,j) + prefactor*vc
+      end do
+   end do
+
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_d_VCoMH_lambda_matrix
+
 subroutine get_lambda_d_VAH_lambda_matrix(p,dv)
 implicit none
    type(QuantumStateData),intent(in) :: p
