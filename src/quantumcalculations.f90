@@ -231,9 +231,10 @@ implicit none
 
    do k = 1, nAtoms
       do i = 1, nPointsGrid+1
-         !negative make pointing from grid to atom
+         !negative make pointing from grid to atom, negative from derivative
+         !makes it positive
          inverse_rHS_2%gridPointValue(i) = &
-            -p%gridHSolvent(k)%gridPoint(i)%vectorij/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
+            p%gridHSolvent(k)%gridPoint(i)%vectorij/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
       end do
       
       do i = 1, n
@@ -499,7 +500,7 @@ implicit none
    dvx = 0d0
    dvy = 0d0
    dvz = 0d0
-   prefactor = -kCoulomb*at%charge*hCharge
+   prefactor = kCoulomb*at%charge*hCharge
    do i = 1, nm
       do j = 1, nm
          li = lambda(1:nb,i)
