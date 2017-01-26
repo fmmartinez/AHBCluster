@@ -99,7 +99,7 @@ type QuantumStateData
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
    real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
-   real(8),dimension(:,:),allocatable :: h
+   real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs
    type(BasisFunction),dimension(:),allocatable :: phi
    type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
    type(MatrixList),dimension(:),allocatable :: pirp
