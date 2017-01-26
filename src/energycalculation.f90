@@ -79,6 +79,27 @@ implicit none
    e = elj + eel   
 end subroutine get_complexsolvent_energy
 
+function get_complexsolvent_lj_energy(pairs) result(elj)
+implicit none
+   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   
+   integer :: i,j,n
+   real(8) :: elj
+   real(8) :: r,sig,eps,qq
+
+   n = size(pairs,1)
+   
+   elj = 0d0   
+   do i = 1, 2
+      do j = 3, n
+         r = pairs(i,j)%rij
+         sig = pairs(i,j)%ljSig
+         eps = pairs(i,j)%ljEps
+         elj = elj + 4d0*eps*(sig**12/r**12-sig**6/r**6)
+      end do
+   end do
+end function get_complexsolvent_lj_energy
+
 subroutine get_complexsolvent_energy_with_H(pairs,elj,eel,e)
 implicit none
 
@@ -190,5 +211,30 @@ implicit none
    call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
    et = ec + ecst + esst
 end subroutine get_total_potential_energy
+
+subroutine get_total_potential_energy_pbme(pairs,p,ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et)
+use maproutines
+implicit none
+   
+   real(8),intent(out) :: ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et
+   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   type(QuantumStateData),intent(in) :: p
+   
+   integer :: i,nm
+
+   nm = size(p%eigenvalues)
+
+   ec = get_complex_energy_repulsion_part(pairs(1,2)%rij)
+   do i = 1, nm
+      ec = ec + p%eigenvalues(i)*(p%rm(i)**2+p%pm(i)**2-hbar)/(2d0*hbar)
+   end do
+
+   ecslj = get_complexsolvent_lj_energy(pairs)
+   ecsel = get_map_contribution((p%vas+p%vbs+p%vhs),p%mapFactor)
+   ecst = ecslj + ecsel
+
+   call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
+   et = ec + ecst + esst
+end subroutine get_total_potential_energy_pbme
 
 end module energycalculation
