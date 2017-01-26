@@ -7,7 +7,7 @@ implicit none
 
 !<--integration parameters
 integer,parameter :: nPointsGrid = 40
-real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.6d0
+real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.4d0
 real(8),parameter :: binWidth = (upperLimit-lowerLimit)/nPointsGrid
 real(8),parameter :: covMinWell = 1.0d0, ionMinWell = 1.6d0
 real(8),parameter :: alpha = 7.735d0
@@ -94,5 +94,16 @@ end type MatrixList
 type VectorForMatrix
    real(8),dimension(1:3) :: vecij
 end type VectorForMatrix
+
+type QuantumStateData
+   real(8),dimension(:),allocatable :: eigenvalues,rm,pm
+   real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
+   real(8),dimension(:,:),allocatable :: lambda,mapFactor
+   real(8),dimension(:,:),allocatable :: h
+   type(BasisFunction),dimension(:),allocatable :: phi
+   type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
+   type(MatrixList),dimension(:),allocatable :: pirp
+   type(MatrixList),dimension(:,:),allocatable :: pir2p
+end type QuantumStateData
 
 end module definitions
