@@ -20,19 +20,21 @@ implicit none
    end do
 end function get_map_contribution
 
-subroutine get_mapFactor(rm,pm,mapFactor)
+subroutine get_mapFactor(pbme)
 implicit none
-   real(8),dimension(:),intent(in) :: rm,pm
-   real(8),dimension(:,:),intent(out) :: mapFactor
-   
+   type(QuantumStateData),intent(inout) :: pbme
    integer :: i,j,nm
 
-   nm = size(rm)
+   nm = size(pbme%rm)
 
-   mapFactor = 0d0
+   pbme%mapFactor = 0d0
    do i = 1, nm
       do j = 1, nm
-         mapFactor = 0.5d0*(rm(i)*rm(j) + pm(i)*pm(j))/hbar
+         if (i==j) then
+            pbme%mapFactor = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j) - hbar)/hbar
+         else
+            pbme%mapFactor = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
+         end if
       end do
    end do
 
