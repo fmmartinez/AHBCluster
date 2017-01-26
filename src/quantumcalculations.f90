@@ -247,6 +247,58 @@ implicit none
    end do
 end subroutine get_phi_inv_r2_HS_phi_matrix
 
+subroutine get_phi_inv_r3_HS_phi_matrix(p)
+!inv2 is a vector
+implicit none
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: i,j,k,n,nAtoms
+   type(EvalOnGridFunction) :: inverse3
+   
+   n = size(p%phi)
+   nAtoms = size(p%gridHSolvent)
+
+   do k = 1, nAtoms
+      do i = 1, nPointsGrid+1
+         inverse3%gridPointValue(i) = 1d0/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
+      end do
+      
+      do i = 1, n
+         do j = 1, n
+            p%pir3p(k)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse3,p%phi(j))
+         end do
+      end do
+   end do
+end subroutine get_phi_inv_r3_HS_phi_matrix
+
+subroutine get_phi_rc_inv_r3_HS_phi_matrix(rab,p)
+!inv2 is a vector
+implicit none
+   real(8),intent(in) :: rab
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: i,j,k,n,nAtoms
+   real(8) :: rch,rsh
+   type(EvalOnGridFunction) :: inverse3
+   
+   n = size(p%phi)
+   nAtoms = size(p%gridHSolvent)
+
+   do k = 1, nAtoms
+      do i = 1, nPointsGrid+1
+         rch = p%gridHSolvent(1)%gridPoint(i)%rij - rab*(0.3882d0)
+         rsh = p%gridHSolvent(k)%gridPoint(i)%rij
+         inverse3%gridPointValue(i) = rch/(rsh**3)
+      end do
+      
+      do i = 1, n
+         do j = 1, n
+            p%pir3p(k)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse3,p%phi(j))
+         end do
+      end do
+   end do
+end subroutine get_phi_rc_inv_r3_HS_phi_matrix
+
 !--- <lambda | f | lambda > matrix elements
 subroutine get_lambda_h_lambda_matrix(at,pair,p)
 implicit none

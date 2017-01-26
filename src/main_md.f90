@@ -69,6 +69,14 @@ do i = 1, nAtoms
    allocate(pbme%pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
    allocate(pbme%pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
 end do
+allocate(pbme%pir3p(1:nAtoms))
+do i = 1, nAtoms
+   allocate(pbme%pir3p(i)%mat(1:nBasisFun,1:nBasisFun))
+end do
+allocate(pbme%pcr3p(1:nAtoms))
+do i = 1, nAtoms
+   allocate(pbme%pcr3p(i)%mat(1:nBasisFun,1:nBasisFun))
+end do
 allocate(pbme%pAHp(1:nBasisFun,1:nBasisFun))
 allocate(pbme%pBHp(1:nBasisFun,1:nBasisFun))
 

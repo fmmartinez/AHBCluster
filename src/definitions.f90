@@ -102,7 +102,7 @@ type QuantumStateData
    real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs
    type(BasisFunction),dimension(:),allocatable :: phi
    type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
-   type(MatrixList),dimension(:),allocatable :: pirp
+   type(MatrixList),dimension(:),allocatable :: pirp,pir3p,pcr3p
    type(MatrixList),dimension(:,:),allocatable :: pir2p
 end type QuantumStateData
 
