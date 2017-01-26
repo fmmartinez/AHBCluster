@@ -34,7 +34,7 @@ implicit none
 
    md%eqPhaseSteps = md%eqSteps/md%eqPhases
 
-   md%nBondConstraints = (n-3)/2
+   md%nBondConstraints = (n-2)/2
 end subroutine read_md_input_file
 
 subroutine read_force_field_file(at)
