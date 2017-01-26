@@ -13,22 +13,17 @@ implicit none
 integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
 integer :: nMapStates
 
-real(8),dimension(1:3) :: forceCCoM_initial
-real(8),dimension(:),allocatable :: eigenvalues
+real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
 real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
-real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
 real(8),dimension(:,:),allocatable :: pqp,lql
-real(8),dimension(:,:),allocatable :: lambda,h,mapFactor
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
 type(AtomPairData),dimension(:,:),allocatable :: atomPairs, atomPairs_initial
 type(MdData) :: md
-type(BasisFunction),dimension(:),allocatable :: phiCov, phiIon, phi
+type(QuantumStateData) :: pbme
+type(BasisFunction),dimension(:),allocatable :: phiCov, phiIon
 type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
-type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
-type(MatrixList),dimension(:),allocatable :: pirp
-type(MatrixList),dimension(:,:),allocatable :: pir2p
 type(vsl_stream_state) :: stream
 
 
@@ -49,40 +44,48 @@ allocate(force_initial%atomPair(1:nAtoms,1:nAtoms))
 
 allocate(phiCov(1:nBasisFunCov))
 allocate(phiIon(1:nBasisFunIon))
-allocate(phi(1:nBasisFun))
 allocate(d2pCov(1:nBasisFunCov))
 allocate(d2pIon(1:nBasisFunIon))
 allocate(d2p(1:nBasisFun))
 
-allocate(gridHSolvent(1:nAtoms))
+allocate(pbme%phi(1:nBasisFun))
 
 allocate(KMatrix(1:nBasisFun,1:nBasisFun))
 allocate(VhMatrix(1:nBasisFun,1:nBasisFun))
 allocate(SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 
-allocate(pqAp(1:nBasisFun,1:nBasisFun))
-allocate(pqBp(1:nBasisFun,1:nBasisFun))
-allocate(pirp(1:nAtoms))
+allocate(pbme%gridHSolvent(1:nAtoms))
+
+allocate(pbme%pqAp(1:nBasisFun,1:nBasisFun))
+allocate(pbme%pqBp(1:nBasisFun,1:nBasisFun))
+allocate(pbme%pirp(1:nAtoms))
 do i = 1, nAtoms
-   allocate(pirp(i)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pbme%pirp(i)%mat(1:nBasisFun,1:nBasisFun))
 end do
-allocate(pir2p(1:nAtoms,1:3))
+allocate(pbme%pir2p(1:nAtoms,1:3))
 do i = 1, nAtoms
-   allocate(pir2p(i,1)%mat(1:nBasisFun,1:nBasisFun))
-   allocate(pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
-   allocate(pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pbme%pir2p(i,1)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pbme%pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
+   allocate(pbme%pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
 end do
-allocate(pAHp(1:nBasisFun,1:nBasisFun))
-allocate(pBHp(1:nBasisFun,1:nBasisFun))
+allocate(pbme%pAHp(1:nBasisFun,1:nBasisFun))
+allocate(pbme%pBHp(1:nBasisFun,1:nBasisFun))
 
 allocate(pqp(1:nBasisFun,1:nBasisFun))
 allocate(lql(1:nMapStates,1:nMapStates))
 
-allocate(eigenvalues(1:nMapStates))
-allocate(lambda(1:nBasisFun,1:nMapStates))
-allocate(h(1:nMapStates,1:nMapStates))
-allocate(mapFactor(1:nMapStates,1:nMapStates))
+allocate(pbme%rm(1:nMapStates))
+allocate(pbme%pm(1:nMapStates))
+allocate(pbme%mapFactor(1:nMapStates,1:nMapStates))
+
+allocate(pbme%eigenvalues(1:nMapStates))
+allocate(pbme%lambda(1:nBasisFun,1:nMapStates))
+
+allocate(pbme%h(1:nMapStates,1:nMapStates))
+allocate(pbme%vas(1:nMapStates,1:nMapStates))
+allocate(pbme%vbs(1:nMapStates,1:nMapStates))
+allocate(pbme%vhs(1:nMapStates,1:nMapStates))
 
 !call read_force_field_file(cluster)
 !call initialize_force_field_explicit_H(cluster_initial)
@@ -96,59 +99,50 @@ call write_generated_initial_positions_XYZ(cluster_initial)
 !get distances and vectors in all atoms
 call get_distances_and_vectors(cluster_initial,atomPairs_initial)
 !get distances and vectors of all solvent atoms with H grid
-call get_H_grid_Atoms_pos_and_vec(gridHSolvent,atomPairs_initial)
+call get_H_grid_Atoms_pos_and_vec(pbme%gridHSolvent,atomPairs_initial)
 
 !call get_force_field_pair_parameters_with_H(cluster_initial,atomPairs_initial)
 call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 
 call initialize_basis_functions_on_each_well(phiCov,phiIon)
-phi(1:nBasisFunCov) = phiCov
-phi(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = phiIon
-call get_overlap_matrix(phi,SMatrix)
+pbme%phi(1:nBasisFunCov) = phiCov
+pbme%phi(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = phiIon
+call get_overlap_matrix(pbme%phi,SMatrix)
 call get_double_derivative_basis_functions_on_each_well(d2pCov,d2pIon)
 d2p(1:nBasisFunCov) = d2pCov
 d2p(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = d2pIon
-call get_phi_KineticEnergy_phi_matrix(phi,d2p,KMatrix)
-call get_phi_Vsubsystem_phi_matrix(phi,atomPairs_initial(1,2)%rij,VhMatrix)
+call get_phi_KineticEnergy_phi_matrix(pbme%phi,d2p,KMatrix)
+call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,VhMatrix)
 
 HMatrix = KMatrix + VhMatrix
-call get_subsystem_lambdas(HMatrix,SMatrix,lambda,eigenvalues)
+call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
-call get_phi_charge_AB_phi_matrix(phi,pqAp,pqBp)
-call get_phi_inv_r_HS_phi_matrix(phi,gridHSolvent,pirp)
+call get_phi_charge_AB_phi_matrix(pbme)
+   !previous subroutine called only once, no need to update
+call get_phi_inv_r_HS_phi_matrix(pbme)
 !h matrix
-call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,&
-                                 eigenvalues,lambda,pqAp,pqBp,pirp,h)
+call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,pbme)
 
-call get_phi_d_VAH_phi_matrix(phi,pAHp)
-call get_phi_d_VBH_phi_matrix(phi,atomPairs_initial(1,2)%rij,pBHp)
-call get_phi_inv_r2_HS_phi_matrix(phi,gridHSolvent,pir2p)
-
-mapFactor = 1d0
+call get_phi_d_VAH_phi_matrix(pbme)
+   !previous subroutine called only once, no need to update
+call get_phi_d_VBH_phi_matrix(pbme,atomPairs_initial(1,2)%rij)
+call get_phi_inv_r2_HS_phi_matrix(pbme)
+pbme%rm = 0.15d0
+pbme%pm = 0.15d0
+call get_mapFactor(pbme)
 !forces
-call get_all_forces_pbme(cluster_initial,atomPairs_initial,lambda,pAHp,pBHp,&
-                        pqAp,pqBp,pir2p,mapFactor,force_initial,forceCCoM_initial)
+call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)
 
-
-call get_phi_q_phi_matrix(phi,gridHSolvent,pqp)
-call get_lambda_q_lambda_matrix(lambda,pqp,lql)
+!call get_phi_q_phi_matrix(phi,gridHSolvent,pqp)
+!call get_lambda_q_lambda_matrix(lambda,pqp,lql)
 !print *, 'qm',get_map_contribution(lql,mapFactor)
-!
-!print '(3f13.4)', eigenvalues
-!print *,''
-!print *, h
-print *,''
-print *, sum(force_initial%inAtom%total(1)) + forceCCoM_initial(1)
-print *, sum(force_initial%inAtom%total(2)) + forceCCoM_initial(2)
-print *, sum(force_initial%inAtom%total(3)) + forceCCoM_initial(3)
-stop
-
 
 do i = 1, md%nTrajectories
    cluster = cluster_initial
    atomPairs = atomPairs_initial
    force = force_initial
+   forceCCoM = forceCCoM_initial
    
    call generate_velocities(cluster,stream,md%initialEqTempInK)
    call remove_CoM_movement(cluster)
@@ -156,12 +150,13 @@ do i = 1, md%nTrajectories
    print *, 'Trajectory',i,' start'
    
    print *, 'equilibration start'
-   call run_thermal_equilibration(cluster,atomPairs,force,md,stream,i)
+   !call run_thermal_equilibration(cluster,atomPairs,force,md,stream,i)
+   call run_thermal_equilibration_pbme_only_11(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
    print *, 'equilibration end'
    
-   print *, 'production start'
-   call run_nve_dynamics(cluster,atomPairs,force,md,i)
-   print *, 'production end'
+   !print *, 'production start'
+   !call run_nve_dynamics(cluster,atomPairs,force,md,i)
+   !print *, 'production end'
    
    print *, 'Trajectory',i,' end'
    print *, ' '
