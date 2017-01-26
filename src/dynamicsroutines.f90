@@ -282,7 +282,7 @@ implicit none
       end if
 
       if (mod(i,md%stepFreqOutLog) == 0) then      
-         call get_total_potential_energy(atomPairs,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         call get_total_potential_energy_pbme(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
          totalKinEnergy = get_kinetic_energy(cluster)
          totalEnergy = totalKinEnergy + totalPotEnergy
          
@@ -291,7 +291,8 @@ implicit none
          write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
                                     dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                     totalPotEnergy,totalKinEnergy,&
-                                    totalEnergy, totalp
+                                    totalEnergy, totalp,&
+                                    (p%rm(1)**2+p%pm(1)**2-hbar)/(2d0*hbar)
       end if
 
       if (try > md%maxEqTries) exit
@@ -367,9 +368,9 @@ implicit none
    dt = mdspecs%timeStep
    hdt = mdspecs%halfTimeStep
    
-   CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
-   cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
-   cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
+   !cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
    do j = 1, nAtoms
       cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
       cluster(j)%pos = cluster(j)%pos + dt*cluster(j)%vel
@@ -380,14 +381,10 @@ implicit none
          p%pm(j) = p%pm(j) - (hdt/hbar)*p%h(j,i)*p%rm(i)
       end do
    end do 
-write(888,*) '**', atomPairs(3,4)%rij  
-write(888,*) cluster(3)%vel
-write(888,*) cluster(4)%vel   
+   
    call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
-write(888,*) atomPairs(3,4)%rij  
-write(888,*) cluster(3)%vel  
-write(888,*) cluster(4)%vel   
+   call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
    
    !call necessary stuff to update h lambda lambda
    call get_phi_inv_r_HS_phi_matrix(p)
@@ -411,9 +408,9 @@ write(888,*) cluster(4)%vel
    call get_mapFactor(p)
    call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
 
-   CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
-   cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
-   cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
+   !cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
    do j = 1, nAtoms
       cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
    end do
