@@ -526,4 +526,26 @@ implicit none
    t = t/kBoltzmann
 end function get_insta_temperature
 
+function get_solvent_polarization(at,pairs) result(de)
+implicit none
+   real(8),parameter :: s1 = 0d0, s2 = -0.56d0
+
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   
+   integer :: i,nAtoms
+   real(8) :: de,dSol1,dSol2
+   real(8),dimension(1:3) :: com
+
+   nAtoms = size(at)
+   
+   call get_center_of_mass_vector(at(1:2),com)
+   de = 0d0
+   do i = 3, nAtoms
+      dSol1 = sqrt(sum(at(i)%pos - com)**2)
+      dSol2 = sqrt(sum(at(i)%pos - (com - s2*pairs(1,2)%vectorij/pairs(1,2)%rij))**2)
+      de = de + at(i)%charge*(1d0/dSol1 - 1d0/dSol2)
+   end do
+end function get_solvent_polarization
+
 end module stateevaluation
