@@ -366,9 +366,12 @@ implicit none
    integer :: i,j, nAtoms, nMap
    real(8) :: dt,hdt
    real(8),dimension(1:3) :: CCoMvel
+   real(8),dimension(:,:),allocatable :: ht
 
    nAtoms = size(cluster)
    nMap = size(p%eigenvalues)
+   
+   allocate(ht(1:nMap,1:nMap))
 
    dt = mdspecs%timeStep
    hdt = mdspecs%halfTimeStep
@@ -394,7 +397,9 @@ implicit none
    !call necessary stuff to update h lambda lambda
    call get_phi_inv_r_HS_phi_matrix(p)
    call get_lambda_h_lambda_matrix(cluster,atomPairs,p)
-   
+   call make_matrix_traceless(p%h,traceN,ht)
+   p%h = ht
+
    do i = 1, nMap
       do j = 1, nMap
          p%rm(j) = p%rm(j) + (dt/hbar)*p%h(j,i)*p%pm(i)
