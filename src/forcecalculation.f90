@@ -64,6 +64,7 @@ end subroutine get_all_forces
 subroutine get_all_forces_pbme(at,pairs,p,force,forceAtComplexCoM)
 use quantumcalculations
 use maproutines
+use stateevaluation
 implicit none
    
    type(Atom),dimension(:),intent(in) :: at
@@ -74,6 +75,7 @@ implicit none
 
    integer :: i,j,n,nm
    type(VectorForMatrix),dimension(:),allocatable :: forceVecHAtomTemp
+   real(8),dimension(1:3) :: com
    real(8),dimension(:),allocatable :: forceHAtomTemp
    real(8),dimension(:,:),allocatable :: dh,dhx,dhy,dhz
 
@@ -129,11 +131,13 @@ implicit none
       force%atomPair(j,i) = force%atomPair(i,j)
 
       !H vs S
+      !calculated as H - CoM - S
       !this is saved in a temporal variable
-      call get_lambda_d_VHSol_lambda_matrix(at(j),p%lambda,p%pir2p(j,1:3),dhx,dhy,dhz)
-      forceVecHAtomTemp(j)%vecij(1) = get_map_contribution(-dhx,p%mapFactor)
-      forceVecHAtomTemp(j)%vecij(2) = get_map_contribution(-dhy,p%mapFactor)
-      forceVecHAtomTemp(j)%vecij(3) = get_map_contribution(-dhz,p%mapFactor)
+      call get_lambda_d_VCoMSol_lambda_matrix(j,at(j),p,dhx)
+      call get_lambda_d_VCoMH_lambda_matrix(j,at(j),p,dhy)
+      call get_center_of_mass_vector(at(1:2),com)
+      forceVecHAtomTemp(j)%vecij = get_map_contribution(-dhx,p%mapFactor)*(com-at(j)%pos) &
+         + get_map_contribution(-dhy,p%mapFactor)*pairs(1,2)%vectorij/pairs(1,2)%rij
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
    end do
