@@ -75,17 +75,18 @@ implicit none
 
    integer :: i,j,n,nm
    type(VectorForMatrix),dimension(:),allocatable :: forceVecHAtomTemp
+   real(8) :: traceN,traceN1
    real(8),dimension(1:3) :: com
    real(8),dimension(:),allocatable :: forceHAtomTemp
-   real(8),dimension(:,:),allocatable :: dh,dhx,dhy,dhz
+   real(8),dimension(:,:),allocatable :: dh,dht,dh1,dht1
 
    n = size(force%inAtom)
    nm = size(p%eigenvalues)
 
    allocate(dh(1:nm,1:nm))
-   allocate(dhx(1:nm,1:nm))
-   allocate(dhy(1:nm,1:nm))
-   allocate(dhz(1:nm,1:nm))
+   allocate(dh1(1:nm,1:nm))
+   allocate(dht(1:nm,1:nm))
+   allocate(dht1(1:nm,1:nm))
    allocate(forceHAtomTemp(1:n))
    allocate(forceVecHAtomTemp(1:n))
 
@@ -103,11 +104,13 @@ implicit none
    force%atomPair(2,1) = force%atomPair(1,2)
       !these are forces due to the proton
    call get_lambda_d_VAH_lambda_matrix(p,dh)
-   forceHAtomTemp(1) = get_map_contribution(-dh,p%mapFactor)
+   call make_matrix_traceless(dh,traceN,dht)
+   forceHAtomTemp(1) = get_map_contribution(-dht,p%mapFactor) - traceN
 !write(999,*) 'mapping AH', dh, p%mapFactor
    forceAtComplexCoM = forceHAtomTemp(1)*pairs(1,2)%vectorij/pairs(2,1)%rij
    call get_lambda_d_VBH_lambda_matrix(p,dh)
-   forceHAtomTemp(2) = get_map_contribution(-dh,p%mapFactor)
+   call make_matrix_traceless(dh,traceN,dht)
+   forceHAtomTemp(2) = get_map_contribution(-dht,p%mapFactor) - traceN
 !write(999,*) 'mapping BH', dh, p%mapFactor
    forceAtComplexCoM = forceAtComplexCoM + (forceHAtomTemp(2)*pairs(2,1)%vectorij)/pairs(2,1)%rij
 !write(999,*) force%atomPair(1,2), forceHAtomTemp(1), forceHAtomTemp(2)
@@ -119,7 +122,8 @@ implicit none
       i = 1
       force%atomPair(i,j) = get_lj_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%rij)
       call get_lambda_d_VASol_lambda_matrix(at(j),pairs(i,j),p,dh)
-      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dh,p%mapFactor)
+      call make_matrix_traceless(dh,traceN,dht)
+      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dht,p%mapFactor) - traceN
       
       force%atomPair(j,i) = force%atomPair(i,j)
       
@@ -127,18 +131,21 @@ implicit none
       i = 2
       force%atomPair(i,j) = get_lj_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%rij)
       call get_lambda_d_VBSol_lambda_matrix(at(j),pairs(i,j),p,dh)
-      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dh,p%mapFactor)
+      call make_matrix_traceless(dh,traceN,dht)
+      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dht,p%mapFactor) - traceN
      
       force%atomPair(j,i) = force%atomPair(i,j)
 
       !H vs S
       !calculated as H - CoM - S
       !this is saved in a temporal variable
-      call get_lambda_d_VCoMSol_lambda_matrix(j,at(j),p,dhx)
-      call get_lambda_d_VCoMH_lambda_matrix(j,at(j),p,dhy)
+      call get_lambda_d_VCoMSol_lambda_matrix(j,at(j),p,dh)
+      call make_matrix_traceless(dh,traceN,dht)
+      call get_lambda_d_VCoMH_lambda_matrix(j,at(j),p,dh1)
+      call make_matrix_traceless(dh1,traceN1,dht1)
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = get_map_contribution(-dhx,p%mapFactor)*(com-at(j)%pos) &
-         + get_map_contribution(-dhy,p%mapFactor)*pairs(1,2)%vectorij/pairs(1,2)%rij
+      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(com-at(j)%pos) &
+         + (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
    end do
