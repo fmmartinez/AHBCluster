@@ -96,6 +96,7 @@ type VectorForMatrix
 end type VectorForMatrix
 
 type QuantumStateData
+   real(8) :: hTraceN
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
    real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
