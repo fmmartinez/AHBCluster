@@ -136,8 +136,24 @@ call get_phi_d_VAH_phi_matrix(pbme)
    !previous subroutine called only once, no need to update
 call get_phi_d_VBH_phi_matrix(pbme,atomPairs_initial(1,2)%rij)
 call get_phi_inv_r2_HS_phi_matrix(pbme)
-pbme%rm = 0.15d0
-pbme%pm = 0.15d0
+call get_phi_inv_r3_HS_phi_matrix(pbme)
+call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
+
+!print *, 'a'
+!print '(12f9.4)', pbme%pAHp
+!print *, 'b'
+!print '(12f9.4)', pbme%pBHp
+!print *, 'l1'
+!print '(12f9.4)', pbme%lambda(1:12,1)
+!print *, 'l2'
+!print '(12f9.4)', pbme%lambda(1:12,2)
+
+pbme%rm(1) = 0.15d0
+pbme%pm(1) = 0.15d0
+do i = 1, nMapStates
+pbme%rm(i) = 0.0867d0
+pbme%pm(i) = 0.0866d0
+end do
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)

@@ -112,6 +112,7 @@ implicit none
    forceAtComplexCoM = forceAtComplexCoM + (forceHAtomTemp(2)*pairs(2,1)%vectorij)/pairs(2,1)%rij
 !write(999,*) force%atomPair(1,2), forceHAtomTemp(1), forceHAtomTemp(2)
 !write(999,*) 'classical', get_AH_force(1d0), get_BH_force(1.6d0)
+!stop
    !AB vs S
    do j = 3, n
       !A vs S
