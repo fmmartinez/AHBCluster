@@ -221,16 +221,27 @@ implicit none
    type(QuantumStateData),intent(in) :: p
    
    integer :: i,nm
+   real(8) :: trace
+   real(8),dimension(:,:),allocatable :: vcsel
 
    nm = size(p%eigenvalues)
+   
+   allocate(vcsel(1:nm,1:nm))
+   vcsel = 0d0
 
    ec = get_complex_energy_repulsion_part(pairs(1,2)%rij)
+   trace = 0d0
    do i = 1, nm
-      ec = ec + p%eigenvalues(i)*(p%rm(i)**2+p%pm(i)**2-hbar)/(2d0*hbar)
+      trace = trace + p%eigenvalues(i)
    end do
+   do i = 1, nm
+      ec = ec + (p%eigenvalues(i)-trace/nm)*(p%rm(i)**2+p%pm(i)**2)/(2d0*hbar)
+   end do
+   ec = ec + trace/nm
 
    ecslj = get_complexsolvent_lj_energy(pairs)
-   ecsel = get_map_contribution((p%vas+p%vbs+p%vhs),p%mapFactor)
+   call make_matrix_traceless((p%vas+p%vbs+p%vhs),trace,vcsel)
+   ecsel = get_map_contribution(vcsel,p%mapFactor) + trace
    ecst = ecslj + ecsel
 
    call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
