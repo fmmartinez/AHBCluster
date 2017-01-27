@@ -36,4 +36,27 @@ implicit none
 
 end subroutine get_mapFactor
 
+subroutine make_matrix_traceless(matrix,traceN,tracelessmatrix)
+implicit none
+   real(8),intent(out) :: traceN
+   real(8),dimension(:,:),intent(in) :: matrix
+   real(8),dimension(:,:),intent(out) :: tracelessMatrix
+   
+   integer :: i,n
+
+   n = size(matrix,1)
+
+   traceN = 0d0
+   do i = 1, n
+      traceN = traceN + matrix(i,i)
+   end do
+
+   tracelessMatrix = matrix
+   do i = 1, n
+      tracelessMatrix(i,i) = tracelessMatrix(i,i) - traceN/real(n)
+   end do
+
+   traceN = traceN/real(n)
+end subroutine make_matrix_traceless
+
 end module maproutines
