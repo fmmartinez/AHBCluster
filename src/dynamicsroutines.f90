@@ -203,6 +203,7 @@ implicit none
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
+   real(8) :: solPol
    real(8),dimension(1:3) :: forceCCoM_old
    type(Atom),dimension(:),allocatable :: cluster_old
    type(Forces) :: force_old
@@ -288,7 +289,8 @@ implicit none
          
          dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
          totalp = get_total_momentum_magnitude(cluster)
-         write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
+         solPol = get_solvent_polarization(cluster,atomPairs)
+         write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, solPol,&
                                     dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                     totalPotEnergy,totalKinEnergy,&
                                     totalEnergy, totalp,&
