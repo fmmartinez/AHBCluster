@@ -290,11 +290,14 @@ implicit none
          dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
          totalp = get_total_momentum_magnitude(cluster)
          solPol = get_solvent_polarization(cluster,atomPairs)
-         write(unit1,'(i10,16f12.6)') i, atomPairs(1,2)%rij, solPol,&
+         write(555,*) i, solPol
+         write(unit1,'(i10,18f12.6)') i, atomPairs(1,2)%rij, atomPairs(1,3)%rij,&
                                     dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                     totalPotEnergy,totalKinEnergy,&
                                     totalEnergy, totalp,&
-                                    (p%rm(1)**2+p%pm(1)**2-hbar)/(2d0*hbar)
+                                    (p%rm(1)**2+p%pm(1)**2-hbar)/(2d0*hbar),&
+                                    (p%rm(2)**2+p%pm(2)**2-hbar)/(2d0*hbar),&
+                                    (p%rm(3)**2+p%pm(3)**2-hbar)/(2d0*hbar)
       end if
 
       if (try > md%maxEqTries) exit
@@ -405,8 +408,10 @@ implicit none
    end do 
 
    !call necessary stuff to update matrix elements to get force
-   call get_phi_d_VBH_phi_matrix(p,atomPairs(1,2)%rij)
+   !call get_phi_d_VBH_phi_matrix(p,atomPairs(1,2)%rij)
    call get_phi_inv_r2_HS_phi_matrix(p)
+   call get_phi_inv_r3_HS_phi_matrix(p)
+   !call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
    call get_mapFactor(p)
    call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
 
