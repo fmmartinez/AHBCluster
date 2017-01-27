@@ -31,9 +31,9 @@ implicit none
    do i = 1, nm
       do j = 1, nm
          if (i==j) then
-            pbme%mapFactor = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j) - hbar)/hbar
+            pbme%mapFactor(i,j) = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j) - hbar)/hbar
          else
-            pbme%mapFactor = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
+            pbme%mapFactor(i,j) = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
          end if
       end do
    end do
