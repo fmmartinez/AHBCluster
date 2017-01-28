@@ -7,7 +7,7 @@ subroutine do_mapping_variables_sampling(stream,p)
 use mkl_vsl_type
 use mkl_vsl
 implicit none
-   type(vsl_stream_state),intent(inout) :: stream
+   type(vsl_stream_state),intent(in) :: stream
    type(QuantumStateData),intent(inout) :: p
    
    integer :: nMap,errcode

@@ -153,10 +153,11 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !print *, 'l2'
 !print '(12f9.4)', pbme%lambda(1:12,2)
 
-pbme%rm = 0.0d0
-pbme%pm = 0.0d0
-pbme%rm(2) = 0.1205d0
-pbme%pm(2) = 0.1244d0
+!pbme%rm = 0.0d0
+!pbme%pm = 0.0d0
+!pbme%rm(2) = 0.1205d0
+!pbme%pm(2) = 0.1244d0
+call do_mapping_variables_sampling(stream,pbme)
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)

@@ -268,10 +268,11 @@ implicit none
          call do_rattle(cluster,atomPairs,md)
          call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
          !regenerate regenerable stuff from quantum state
-         p%rm = 0d0
-         p%pm = 0d0
-         p%rm(1) = 0.1205d0
-         p%pm(1) = 0.1244d0
+         !p%rm = 0d0
+         !p%pm = 0d0
+         !p%rm(1) = 0.1205d0
+         !p%pm(1) = 0.1244d0
+         call do_mapping_variables_sampling(stream,p)
          call get_mapFactor(p)
       end if
 
@@ -302,9 +303,9 @@ implicit none
          write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
-         write(unit2,'(i10,15f12.6)') i, p%h(1,1), p%h(2,2), p%h(3,3), &
+         write(unit2,'(i10,15f12.6)') i, p%h(1,1), p%h(2,2), p%h(3,3), p%h(4,4),&
             (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),(p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
-            (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar)
+            (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar),(p%rm(4)**2+p%pm(4)**2)/(2d0*hbar)
       end if
 
       if (try > md%maxEqTries) exit
