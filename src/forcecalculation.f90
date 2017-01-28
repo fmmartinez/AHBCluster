@@ -158,6 +158,16 @@ implicit none
 !write(999,*) 'C-Cl vs H',forceHAtomTemp(3),forceHAtomTemp(4)   
 !write(999,*) 'classical',get_HS_force(0.125d0,pairs(1,3)%rij),&
 !                                    get_HS_force(0.125d0,pairs(1,4)%rij)
+!if (force%atomPair(1,3) > force%atomPair(1,4)) then
+!   write(998,*) 'kek'
+!   write(998,'(12f10.4)') p%pir3p(3)%mat
+!   write(998,*) 'kek'
+!   write(998,*) dh
+!   write(997,*) 'kek'
+!   write(997,'(12f10.4)') p%pcr3p(3)%mat
+!   write(997,*) 'kek'
+!   write(997,*) dh1
+!end if
 !write(888,*) 'u vec C-H'
 !write(888,*) forceVecHAtomTemp(3)%vecij/forceHAtomTemp(3)
 !write(888,*) &
