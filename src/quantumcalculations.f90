@@ -311,9 +311,12 @@ implicit none
    m = size(p%eigenvalues)
    
    p%h = 0d0   
-   do i = 1, m
-      p%h(i,i) = p%eigenvalues(i)
-   end do
+   call get_phi_Vsubsystem_phi_matrix(p%phi,pair(1,2)%rij,p%phiVsphi)
+   call get_lambda_hs_lambda_matrix(p)
+   !do i = 1, m
+   !   p%h(i,i) = p%eigenvalues(i)
+   !end do
+   p%h = p%hs
    
    call get_lambda_VASol_lambda_matrix(at,pair,p)
    call get_lambda_VBSol_lambda_matrix(at,pair,p)
@@ -322,6 +325,38 @@ implicit none
    p%h = p%h + p%vas + p%vbs + p%vhs
 
 end subroutine get_lambda_h_lambda_matrix
+
+subroutine get_lambda_hs_lambda_matrix(p)
+implicit none
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: i,j,nb,nm
+   real(8) :: vc
+   real(8),dimension(:),allocatable :: li,lj
+   real(8),dimension(:,:),allocatable :: phihsphi
+   
+   nb = size(p%lambda,1)
+   nm = size(p%eigenvalues)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+   allocate(phihsphi(1:nb,1:nb))
+
+   p%hs = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         li = p%lambda(1:nb,i)
+         lj = p%lambda(1:nb,j)
+         phihsphi = p%phiKphi + p%phiVsphi
+         vc = get_lambda_f_lambda_matrix_element(li,lj,phihsphi)
+         p%hs(i,j) = p%hs(i,j) + vc
+      end do
+   end do
+   
+   deallocate(phihsphi)
+   deallocate(lj)
+   deallocate(li)
+end subroutine get_lambda_hs_lambda_matrix
 
 subroutine get_lambda_VHSol_lambda_matrix(at,p)
 implicit none
