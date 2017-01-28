@@ -15,7 +15,7 @@ integer :: nMapStates
 
 real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
 real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
-real(8),dimension(:,:),allocatable :: pqp,lql
+real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
 type(Forces) :: force, force_initial
@@ -91,6 +91,7 @@ allocate(pbme%eigenvalues(1:nMapStates))
 allocate(pbme%lambda(1:nBasisFun,1:nMapStates))
 
 allocate(pbme%h(1:nMapStates,1:nMapStates))
+allocate(htemp(1:nMapStates,1:nMapStates))
 allocate(pbme%vas(1:nMapStates,1:nMapStates))
 allocate(pbme%vbs(1:nMapStates,1:nMapStates))
 allocate(pbme%vhs(1:nMapStates,1:nMapStates))
@@ -131,6 +132,8 @@ call get_phi_charge_AB_phi_matrix(pbme)
 call get_phi_inv_r_HS_phi_matrix(pbme)
 !h matrix
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,pbme)
+call make_matrix_traceless(pbme%h,pbme%hTraceN,htemp)
+pbme%h = htemp
 
 call get_phi_d_VAH_phi_matrix(pbme)
    !previous subroutine called only once, no need to update
@@ -148,11 +151,11 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !print *, 'l2'
 !print '(12f9.4)', pbme%lambda(1:12,2)
 
-pbme%rm(1) = 0.15d0
-pbme%pm(1) = 0.15d0
-do i = 1, nMapStates
-pbme%rm(i) = 0.0867d0
-pbme%pm(i) = 0.0866d0
+pbme%rm(1) = 0.1205d0
+pbme%pm(1) = 0.1244d0
+do i = 2, nMapStates
+pbme%rm(i) = 0.0d0
+pbme%pm(i) = 0.0d0
 end do
 call get_mapFactor(pbme)
 !forces
