@@ -3,6 +3,22 @@ use definitions
 
 contains
 
+subroutine do_mapping_variables_sampling(stream,p)
+use mkl_vsl_type
+use mkl_vsl
+implicit none
+   type(vsl_stream_state),intent(inout) :: stream
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: nMap,errcode
+   
+   nMap = size(p%rm)
+
+   errcode = vdrnggaussian(method,stream,nMap,p%rm,0d0,hbar)
+   errcode = vdrnggaussian(method,stream,nMap,p%pm,0d0,hbar)
+
+end subroutine do_mapping_variables_sampling
+
 function get_map_contribution(mat,mapFactor) result(y)
 implicit none
    real(8),dimension(:,:),intent(in) :: mapFactor,mat
