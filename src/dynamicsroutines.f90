@@ -302,7 +302,7 @@ implicit none
          write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
-         write(unit2,'(i10,15f12.6)') p%h(1,1), p%h(2,2), p%h(3,3), &
+         write(unit2,'(i10,15f12.6)') i, p%h(1,1), p%h(2,2), p%h(3,3), &
             (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),(p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
             (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar)
       end if
