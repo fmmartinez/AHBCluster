@@ -199,8 +199,8 @@ implicit none
    type(QuantumStateData),intent(inout) :: p
    type(vsl_stream_state),intent(in) :: stream
    
-   character(17) :: outLogFile, trjxyzFile
-   integer :: i,i_old,try,nAtoms,unit1,unit2
+   character(17) :: outLogFile1, outLogFile2, trjxyzFile1
+   integer :: i,i_old,try,nAtoms,unit1,unit2,unit3
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
@@ -232,10 +232,12 @@ implicit none
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
    clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
    
-   write(outLogFile,'(a9,i4.4,a4)') 'eq-output',trj,'.log'
-   write(trjxyzFile,'(a9,i4.4,a4)') 'equi-traj',trj,'.xyz'
-   open(newunit=unit1,file=outLogFile)
-   open(newunit=unit2,file=trjxyzFile)
+   write(outLogFile1,'(a9,i4.4,a4)') 'outputEq1',trj,'.log'
+   write(outLogFile2,'(a9,i4.4,a4)') 'outputEq2',trj,'.log'
+   write(trjxyzFile1,'(a9,i4.4,a4)') 'xtrajEqui',trj,'.xyz'
+   open(newunit=unit1,file=outLogFile1)
+   open(newunit=unit2,file=outLogFile2)
+   open(newunit=unit3,file=trjxyzFile1)
    
    do while (i <= md%eqSteps)
 
@@ -285,7 +287,7 @@ implicit none
       i = i + 1
 
       if (mod(i,md%stepFreqOutTrajectory) == 0) then
-         call write_xyz_trajectory(cluster,i,unit2)
+         call write_xyz_trajectory(cluster,i,unit3)
       end if
 
       if (mod(i,md%stepFreqOutLog) == 0) then
@@ -297,13 +299,12 @@ implicit none
          dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
          totalp = get_total_momentum_magnitude(cluster)
          solPol = get_solvent_polarization(cluster,atomPairs)
-         write(unit1,'(i10,18f12.6)') i, atomPairs(1,2)%rij, solpol,&
-                                    dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
-                                    totalPotEnergy,totalKinEnergy,&
-                                    totalEnergy, totalp,&
-                                    (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),&
-                                    (p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
-                                    (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar)
+         write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
+            dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
+            totalEnergy, totalp
+         write(unit2,'(i10,15f12.6)') p%h(1,1), p%h(2,2), p%h(3,3), &
+            (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),(p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
+            (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar)
       end if
 
       if (try > md%maxEqTries) exit
@@ -314,6 +315,7 @@ implicit none
       stop
    end if
 
+   close(unit3)
    close(unit2)
    close(unit1)
 end subroutine run_thermal_equilibration_pbme_only_11
