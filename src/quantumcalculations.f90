@@ -262,7 +262,7 @@ implicit none
       do i = 1, nPointsGrid+1
          inverse3%gridPointValue(i) = 1d0/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
       end do
-      
+
       do i = 1, n
          do j = 1, n
             p%pir3p(k)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse3,p%phi(j))
@@ -293,7 +293,7 @@ implicit none
       
       do i = 1, n
          do j = 1, n
-            p%pir3p(k)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse3,p%phi(j))
+            p%pcr3p(k)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse3,p%phi(j))
          end do
       end do
    end do
@@ -310,6 +310,7 @@ implicit none
 
    m = size(p%eigenvalues)
    
+   p%h = 0d0   
    do i = 1, m
       p%h(i,i) = p%eigenvalues(i)
    end do
@@ -868,7 +869,7 @@ implicit none
    integer :: n,m,lwork,info_1
    real(8),dimension(:),allocatable :: w,work
    real(8),dimension(:,:),allocatable :: Htemp,Stemp
-
+   
    n = size(H,1)
    m = size(e)
 
@@ -885,7 +886,9 @@ implicit none
    
    e(1:m) = w(1:m)
    l(1:n,1:m) = Htemp(1:n,1:m)
-
+   
+   print *, e
+   stop
    deallocate(Stemp)
    deallocate(Htemp)
 end subroutine
