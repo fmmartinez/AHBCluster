@@ -887,8 +887,6 @@ implicit none
    e(1:m) = w(1:m)
    l(1:n,1:m) = Htemp(1:n,1:m)
    
-   print *, e
-   stop
    deallocate(Stemp)
    deallocate(Htemp)
 end subroutine
