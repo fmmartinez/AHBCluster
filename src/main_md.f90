@@ -14,7 +14,7 @@ integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
 integer :: nMapStates
 
 real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
-real(8),dimension(:,:),allocatable :: KMatrix, VhMatrix, SMatrix, HMatrix
+real(8),dimension(:,:),allocatable :: SMatrix, HMatrix
 real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
@@ -50,8 +50,10 @@ allocate(d2p(1:nBasisFun))
 
 allocate(pbme%phi(1:nBasisFun))
 
-allocate(KMatrix(1:nBasisFun,1:nBasisFun))
-allocate(VhMatrix(1:nBasisFun,1:nBasisFun))
+allocate(pbme%phiKphi(1:nBasisFun,1:nBasisFun))
+allocate(pbme%phiVsphi(1:nBasisFun,1:nBasisFun))
+allocate(pbme%hs(1:nMapStates,1:nMapStates))
+
 allocate(SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 
@@ -120,10 +122,10 @@ call get_overlap_matrix(pbme%phi,SMatrix)
 call get_double_derivative_basis_functions_on_each_well(d2pCov,d2pIon)
 d2p(1:nBasisFunCov) = d2pCov
 d2p(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = d2pIon
-call get_phi_KineticEnergy_phi_matrix(pbme%phi,d2p,KMatrix)
-call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,VhMatrix)
+call get_phi_KineticEnergy_phi_matrix(pbme%phi,d2p,pbme%phiKphi)
+call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,pbme%phiVsphi)
 
-HMatrix = KMatrix + VhMatrix
+HMatrix = pbme%phiKphi + pbme%phiVsphi
 call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
@@ -151,12 +153,10 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !print *, 'l2'
 !print '(12f9.4)', pbme%lambda(1:12,2)
 
-pbme%rm(1) = 0.1205d0
-pbme%pm(1) = 0.1244d0
-do i = 2, nMapStates
-pbme%rm(i) = 0.0d0
-pbme%pm(i) = 0.0d0
-end do
+pbme%rm = 0.0d0
+pbme%pm = 0.0d0
+pbme%rm(2) = 0.1205d0
+pbme%pm(2) = 0.1244d0
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)
