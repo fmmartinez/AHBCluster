@@ -186,6 +186,7 @@ subroutine run_thermal_equilibration_pbme_only_11(cluster,atomPairs,p,force,forc
 use ioroutines
 use stateevaluation
 use energycalculation
+use maproutines
 use mkl_vsl_type
 use mkl_vsl
 implicit none
@@ -265,6 +266,11 @@ implicit none
          call do_rattle(cluster,atomPairs,md)
          call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
          !regenerate regenerable stuff from quantum state
+         p%rm = 0d0
+         p%pm = 0d0
+         p%rm(1) = 0.1205d0
+         p%pm(1) = 0.1244d0
+         call get_mapFactor(p)
       end if
 
       if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
@@ -282,7 +288,8 @@ implicit none
          call write_xyz_trajectory(cluster,i,unit2)
       end if
 
-      if (mod(i,md%stepFreqOutLog) == 0) then      
+      if (mod(i,md%stepFreqOutLog) == 0) then
+         if (atomPairs(1,2)%rij /= atomPairs(1,2)%rij) stop 'NaN found'      
          call get_total_potential_energy_pbme(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
          totalKinEnergy = get_kinetic_energy(cluster)
          totalEnergy = totalKinEnergy + totalPotEnergy
@@ -295,9 +302,9 @@ implicit none
                                     dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,&
                                     totalPotEnergy,totalKinEnergy,&
                                     totalEnergy, totalp,&
-                                    (p%rm(1)**2+p%pm(1)**2-hbar)/(2d0*hbar),&
-                                    (p%rm(2)**2+p%pm(2)**2-hbar)/(2d0*hbar),&
-                                    (p%rm(3)**2+p%pm(3)**2-hbar)/(2d0*hbar)
+                                    (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),&
+                                    (p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
+                                    (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar)
       end if
 
       if (try > md%maxEqTries) exit
@@ -395,10 +402,10 @@ implicit none
    call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
    
    !call necessary stuff to update h lambda lambda
+   call get_mapFactor(p)
    call get_phi_inv_r_HS_phi_matrix(p)
    call get_lambda_h_lambda_matrix(cluster,atomPairs,p)
    call make_matrix_traceless(p%h,p%hTraceN,ht)
-   p%h = ht
 
    do i = 1, nMap
       do j = 1, nMap
@@ -416,7 +423,7 @@ implicit none
    !call get_phi_d_VBH_phi_matrix(p,atomPairs(1,2)%rij)
    call get_phi_inv_r2_HS_phi_matrix(p)
    call get_phi_inv_r3_HS_phi_matrix(p)
-   !call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
+   call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
    call get_mapFactor(p)
    call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
 
