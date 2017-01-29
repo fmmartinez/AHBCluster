@@ -919,8 +919,9 @@ implicit none
    Stemp = S
    call dsygv(1,'V','U',n,Htemp,n,Stemp,n,w,work,lwork,info_1)
    
-   e(1:m) = w(1:m)
-   l(1:n,1:m) = Htemp(1:n,1:m)
+   e = w
+   
+   l = Htemp
    
    deallocate(Stemp)
    deallocate(Htemp)
