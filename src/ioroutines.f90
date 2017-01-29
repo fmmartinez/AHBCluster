@@ -4,16 +4,16 @@ implicit none
 
 contains
 
-subroutine read_md_input_file(n,nBasisFunCov,nBasisFunIon,nMapStates,md)
+subroutine read_md_input_file(n,nBasisFunCov,nBasisFunIon,nMapStates,ss,md)
 implicit none
-   integer,intent(inout) :: n,nBasisFunCov,nBasisFunIon,nMapStates
+   integer,intent(inout) :: n,nBasisFunCov,nBasisFunIon,nMapStates,ss
    type(MdData),intent(inout) :: md
 
    integer :: unit1
 
    open(newunit=unit1,file='md.in')
       read(unit1,*)
-      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates
+      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, ss
       read(unit1,*)
       read(unit1,*) md%seed, md%nTrajectories
       read(unit1,*)
