@@ -200,7 +200,7 @@ implicit none
    type(vsl_stream_state),intent(in) :: stream
    
    character(17) :: outLogFile1, outLogFile2, trjxyzFile1
-   integer :: i,i_old,try,nAtoms,unit1,unit2,unit3
+   integer :: i,i_old,j,try,nAtoms,nMapStates,unit1,unit2,unit3
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
@@ -212,6 +212,7 @@ implicit none
    type(AtomPairData),dimension(:,:),allocatable :: atomPairs_old
    
    nAtoms = size(cluster)
+   nMapStates = size(p%rm)
 
    allocate(cluster_old(1:nAtoms))
    allocate(atomPairs_old(1:nAtoms,1:nAtoms))
@@ -303,9 +304,8 @@ implicit none
          write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
-         write(unit2,'(i10,15f12.6)') i, p%h(1,1), p%h(2,2), p%h(3,3), p%h(4,4),&
-            (p%rm(1)**2+p%pm(1)**2)/(2d0*hbar),(p%rm(2)**2+p%pm(2)**2)/(2d0*hbar),&
-            (p%rm(3)**2+p%pm(3)**2)/(2d0*hbar),(p%rm(4)**2+p%pm(4)**2)/(2d0*hbar)
+         write(unit2,'(i10,24f12.6)') i, (p%h(j,j),j=1,nMapStates),&
+            ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
       end if
 
       if (try > md%maxEqTries) exit
