@@ -423,7 +423,7 @@ implicit none
 
    !call necessary stuff to update matrix elements to get force
    !call get_phi_d_VBH_phi_matrix(p,atomPairs(1,2)%rij)
-   call get_phi_inv_r2_HS_phi_matrix(p)
+   !call get_phi_inv_r2_HS_phi_matrix(p)
    call get_phi_inv_r3_HS_phi_matrix(p)
    call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
    call get_mapFactor(p)

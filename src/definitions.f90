@@ -105,7 +105,7 @@ type QuantumStateData
    type(BasisFunction),dimension(:),allocatable :: phi
    type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
    type(MatrixList),dimension(:),allocatable :: pirp,pir3p,pcr3p
-   type(MatrixList),dimension(:,:),allocatable :: pir2p
+!   type(MatrixList),dimension(:,:),allocatable :: pir2p
 end type QuantumStateData
 
 end module definitions

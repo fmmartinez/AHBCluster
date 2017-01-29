@@ -65,12 +65,12 @@ allocate(pbme%pirp(1:nAtoms))
 do i = 1, nAtoms
    allocate(pbme%pirp(i)%mat(1:nBasisFun,1:nBasisFun))
 end do
-allocate(pbme%pir2p(1:nAtoms,1:3))
-do i = 1, nAtoms
-   allocate(pbme%pir2p(i,1)%mat(1:nBasisFun,1:nBasisFun))
-   allocate(pbme%pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
-   allocate(pbme%pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
-end do
+!allocate(pbme%pir2p(1:nAtoms,1:3))
+!do i = 1, nAtoms
+!   allocate(pbme%pir2p(i,1)%mat(1:nBasisFun,1:nBasisFun))
+!   allocate(pbme%pir2p(i,2)%mat(1:nBasisFun,1:nBasisFun))
+!   allocate(pbme%pir2p(i,3)%mat(1:nBasisFun,1:nBasisFun))
+!end do
 allocate(pbme%pir3p(1:nAtoms))
 do i = 1, nAtoms
    allocate(pbme%pir3p(i)%mat(1:nBasisFun,1:nBasisFun))
@@ -140,7 +140,7 @@ pbme%h = htemp
 call get_phi_d_VAH_phi_matrix(pbme)
    !previous subroutine called only once, no need to update
 call get_phi_d_VBH_phi_matrix(pbme,atomPairs_initial(1,2)%rij)
-call get_phi_inv_r2_HS_phi_matrix(pbme)
+!call get_phi_inv_r2_HS_phi_matrix(pbme)
 call get_phi_inv_r3_HS_phi_matrix(pbme)
 call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 

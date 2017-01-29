@@ -218,34 +218,34 @@ implicit none
    end do
 end subroutine get_phi_inv_r_HS_phi_matrix
 
-subroutine get_phi_inv_r2_HS_phi_matrix(p)
-!inv2 is a vector
-implicit none
-   type(QuantumStateData),intent(inout) :: p
-   
-   integer :: i,j,k,n,nAtoms
-   type(EvalOnGridFunction),dimension(1:3) :: inverse_rHS_2
-   
-   n = size(p%phi)
-   nAtoms = size(p%gridHSolvent)
-
-   do k = 1, nAtoms
-      do i = 1, nPointsGrid+1
-         !negative make pointing from grid to atom, negative from derivative
-         !makes it positive
-         inverse_rHS_2%gridPointValue(i) = &
-            p%gridHSolvent(k)%gridPoint(i)%vectorij/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
-      end do
-      
-      do i = 1, n
-         do j = 1, n
-            p%pir2p(k,1)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(1),p%phi(j))
-            p%pir2p(k,2)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(2),p%phi(j))
-            p%pir2p(k,3)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(3),p%phi(j))
-         end do
-      end do
-   end do
-end subroutine get_phi_inv_r2_HS_phi_matrix
+!subroutine get_phi_inv_r2_HS_phi_matrix(p)
+!!inv2 is a vector
+!implicit none
+!   type(QuantumStateData),intent(inout) :: p
+!   
+!   integer :: i,j,k,n,nAtoms
+!   type(EvalOnGridFunction),dimension(1:3) :: inverse_rHS_2
+!   
+!   n = size(p%phi)
+!   nAtoms = size(p%gridHSolvent)
+!
+!   do k = 1, nAtoms
+!      do i = 1, nPointsGrid+1
+!         !negative make pointing from grid to atom, negative from derivative
+!         !makes it positive
+!         inverse_rHS_2%gridPointValue(i) = &
+!            p%gridHSolvent(k)%gridPoint(i)%vectorij/(p%gridHSolvent(k)%gridPoint(i)%rij**3)
+!      end do
+!      
+!      do i = 1, n
+!         do j = 1, n
+!            p%pir2p(k,1)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(1),p%phi(j))
+!            p%pir2p(k,2)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(2),p%phi(j))
+!            p%pir2p(k,3)%mat(i,j) = integrate_trapezoid_rule(p%phi(i),inverse_rHS_2(3),p%phi(j))
+!         end do
+!      end do
+!   end do
+!end subroutine get_phi_inv_r2_HS_phi_matrix
 
 subroutine get_phi_inv_r3_HS_phi_matrix(p)
 !inv2 is a vector
