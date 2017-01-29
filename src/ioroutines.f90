@@ -4,16 +4,16 @@ implicit none
 
 contains
 
-subroutine read_md_input_file(n,md)
+subroutine read_md_input_file(n,nBasisFunCov,nBasisFunIon,nMapStates,md)
 implicit none
-   integer,intent(inout) :: n
+   integer,intent(inout) :: n,nBasisFunCov,nBasisFunIon,nMapStates
    type(MdData),intent(inout) :: md
 
    integer :: unit1
 
    open(newunit=unit1,file='md.in')
       read(unit1,*)
-      read(unit1,*) n
+      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates
       read(unit1,*)
       read(unit1,*) md%seed, md%nTrajectories
       read(unit1,*)
@@ -34,7 +34,7 @@ implicit none
 
    md%eqPhaseSteps = md%eqSteps/md%eqPhases
 
-   md%nBondConstraints = (n-3)/2
+   md%nBondConstraints = (n-2)/2
 end subroutine read_md_input_file
 
 subroutine read_force_field_file(at)

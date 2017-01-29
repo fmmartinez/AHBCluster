@@ -293,6 +293,33 @@ implicit none
 
 end subroutine get_distances_and_vectors
 
+subroutine get_H_grid_Atoms_pos_and_vec(HS,pair)
+!vectors have direction from atom to point in grid
+implicit none
+   type(AtomPairData),dimension(:,:),intent(in) :: pair
+   type(EvalOnGridHData),dimension(:),intent(out) :: HS
+   
+   integer :: i,j,n
+   real(8) :: q
+   
+   n = size(pair,1)
+
+   do i = 1, nPointsGrid+1
+      q = lowerLimit + (i-1)*binWidth
+
+      HS(1)%gridPoint(i)%rij = q
+      HS(1)%gridPoint(i)%vectorij = q*pair(1,2)%vectorij/pair(1,2)%rij
+      
+      HS(2)%gridPoint(i)%rij = pair(1,2)%rij - q
+      HS(2)%gridPoint(i)%vectorij = HS(2)%gridPoint(i)%rij*pair(2,1)%vectorij/pair(1,2)%rij
+      
+      do j = 3, n
+         HS(j)%gridpoint(i)%vectorij = pair(j,1)%vectorij + HS(1)%gridPoint(i)%vectorij
+         HS(j)%gridpoint(i)%rij = sqrt(sum(HS(j)%gridpoint(i)%vectorij**2))
+      end do
+   end do
+end subroutine get_H_grid_Atoms_pos_and_vec
+
 subroutine update_charges_in_complex_and_pairs(atoms,pairs)
 implicit none
    
@@ -498,5 +525,27 @@ implicit none
    t = (2d0/(3d0*nAtoms-nc))*k/ktoKcalMol
    t = t/kBoltzmann
 end function get_insta_temperature
+
+function get_solvent_polarization(at,pairs) result(de)
+implicit none
+   type(Atom),dimension(:),intent(in) :: at
+   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   
+   integer :: i,nAtoms
+   real(8) :: de,dSol1,dSol2
+   real(8),dimension(1:3) :: s1,s2
+
+   nAtoms = size(at)
+   
+   s1 = 2.7d0*(at(2)%mass/(at(1)%mass + at(2)%mass))*pairs(1,2)%vectorij/pairs(1,2)%rij
+   s2 = 1.6d0*pairs(1,2)%vectorij/pairs(1,2)%rij
+   
+   de = 0d0
+   do i = 3, nAtoms
+      dSol1 = sqrt(sum((pairs(i,1)%vectorij + s1)**2))
+      dSol2 = sqrt(sum((pairs(i,1)%vectorij + s2)**2))
+      de = de + at(i)%charge*(1d0/dSol1 - 1d0/dSol2)
+   end do
+end function get_solvent_polarization
 
 end module stateevaluation

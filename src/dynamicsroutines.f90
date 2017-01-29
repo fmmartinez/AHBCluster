@@ -182,6 +182,145 @@ implicit none
    close(unit1)
 end subroutine run_thermal_equilibration
 
+subroutine run_thermal_equilibration_pbme_only_11(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
+use ioroutines
+use stateevaluation
+use energycalculation
+use maproutines
+use mkl_vsl_type
+use mkl_vsl
+implicit none
+   integer,intent(in) :: trj
+   real(8),dimension(1:3),intent(inout) :: forceCCoM
+   type(Atom),dimension(:),intent(inout) :: cluster
+   type(Forces),intent(inout) :: force
+   type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
+   type(MdData),intent(in) :: md
+   type(QuantumStateData),intent(inout) :: p
+   type(vsl_stream_state),intent(in) :: stream
+   
+   character(17) :: outLogFile1, outLogFile2, trjxyzFile1
+   integer :: i,i_old,j,try,nAtoms,nMapStates,unit1,unit2,unit3
+   real(8) :: tempInK, maxDistAS, clusterRadius
+   real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
+   real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
+   real(8) :: solPol
+   real(8),dimension(1:3) :: forceCCoM_old
+   type(Atom),dimension(:),allocatable :: cluster_old
+   type(Forces) :: force_old
+   type(QuantumStateData) :: p_old
+   type(AtomPairData),dimension(:,:),allocatable :: atomPairs_old
+   
+   nAtoms = size(cluster)
+   nMapStates = size(p%rm)
+
+   allocate(cluster_old(1:nAtoms))
+   allocate(atomPairs_old(1:nAtoms,1:nAtoms))
+
+   allocate(force_old%inAtom(1:nAtoms))
+   allocate(force_old%atomPair(1:nAtoms,1:nAtoms))
+   
+   cluster_old = cluster
+   atomPairs_old = atomPairs
+   force_old = force
+   p_old = p
+
+   try = 1
+   i = 1
+
+   i_old = i
+
+   dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+   clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
+   
+   write(outLogFile1,'(a9,i4.4,a4)') 'outputEq1',trj,'.log'
+   write(outLogFile2,'(a9,i4.4,a4)') 'outputEq2',trj,'.log'
+   write(trjxyzFile1,'(a9,i4.4,a4)') 'xtrajEqui',trj,'.xyz'
+   open(newunit=unit1,file=outLogFile1)
+   open(newunit=unit2,file=outLogFile2)
+   open(newunit=unit3,file=trjxyzFile1)
+   
+   do while (i <= md%eqSteps)
+
+      tempInK = md%initialEqTempInK + (i/md%eqPhaseSteps)*(md%targetTempInK-md%initialEqTempInK)/md%eqPhases
+      
+      if (mod(i,md%stepFreqEqSave) == 0) then
+         cluster_old = cluster
+         atomPairs_old = atomPairs
+         force_old = force
+         forceCCoM_old = forceCCoM
+         i_old = i
+         p_old = p
+      end if
+      
+      maxDistAS = clusterRadius*1.75d0*(0.75d0+(i/md%eqPhaseSteps)*(0.25/md%eqPhases))
+      if (maxval(atomPairs(1,1:nAtoms)%rij) > maxDistAS) then
+         cluster = cluster_old
+         atomPairs = atomPairs_old
+         force = force_old
+         forceCCoM_old = forceCCoM
+         print *, try, 'evaporated and failed at', i, maxval(atomPairs(1,1:nAtoms)%rij)
+         i = i_old
+         p = p_old
+         try = try + 1
+         print *, 'restart', try
+         call generate_velocities(cluster,stream,tempInK)
+         call remove_CoM_movement(cluster)
+         call do_rattle(cluster,atomPairs,md)
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
+         !regenerate regenerable stuff from quantum state
+         !p%rm = 0d0
+         !p%pm = 0d0
+         !p%rm(1) = 0.1205d0
+         !p%pm(1) = 0.1244d0
+         call do_mapping_variables_sampling(stream,p)
+         call get_mapFactor(p)
+      end if
+
+      if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
+      if (mod(i,(i/md%eqPhaseSteps+1)*md%stepFreqVelRescale) == 0) then
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
+         call remove_CoM_movement(cluster)
+         call do_rattle(cluster,atomPairs,md)
+         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
+      end if
+
+      call velocity_verlet_int_one_timestep_pbme(cluster,atomPairs,p,force,forceCCoM,md)
+      i = i + 1
+
+      if (mod(i,md%stepFreqOutTrajectory) == 0) then
+         call write_xyz_trajectory(cluster,i,unit3)
+      end if
+
+      if (mod(i,md%stepFreqOutLog) == 0) then
+         if (atomPairs(1,2)%rij /= atomPairs(1,2)%rij) stop 'NaN found'      
+         call get_total_potential_energy_pbme(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         totalKinEnergy = get_kinetic_energy(cluster)
+         totalEnergy = totalKinEnergy + totalPotEnergy
+         
+         dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+         totalp = get_total_momentum_magnitude(cluster)
+         solPol = get_solvent_polarization(cluster,atomPairs)
+         write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
+            dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
+            totalEnergy, totalp
+         write(unit2,'(i10,24f12.6)') i, (p%h(j,j),j=1,nMapStates),&
+            ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
+      end if
+
+      if (try > md%maxEqTries) exit
+   end do
+
+   if (try > md%maxEqTries) then
+      print *, 'stopped equilibration after', try,' tries'
+      stop
+   end if
+
+   close(unit3)
+   close(unit2)
+   close(unit1)
+end subroutine run_thermal_equilibration_pbme_only_11
+
 subroutine velocity_verlet_int_one_timestep(cluster,atomPairs,force,mdspecs)
 use stateevaluation
 use forcecalculation
@@ -219,6 +358,86 @@ implicit none
 
    call do_rattle(cluster,atomPairs,mdspecs)
 end subroutine velocity_verlet_int_one_timestep
+
+subroutine velocity_verlet_int_one_timestep_pbme(cluster,atomPairs,p,force,forceCCoM,mdspecs)
+use stateevaluation
+use forcecalculation
+use quantumcalculations
+use maproutines
+implicit none
+   real(8),dimension(1:3),intent(inout) :: forceCCoM
+   type(Atom),dimension(:),intent(inout) :: cluster
+   type(Forces),intent(inout) :: force
+   type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
+   type(MdData),intent(in) :: mdspecs
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: i,j, nAtoms, nMap
+   real(8) :: dt,hdt
+   real(8),dimension(1:3) :: CCoMvel
+   real(8),dimension(:,:),allocatable :: ht
+
+   nAtoms = size(cluster)
+   nMap = size(p%eigenvalues)
+   
+   allocate(ht(1:nMap,1:nMap))
+
+   dt = mdspecs%timeStep
+   hdt = mdspecs%halfTimeStep
+   
+   !CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
+   !cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
+   do j = 1, nAtoms
+      cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
+      cluster(j)%pos = cluster(j)%pos + dt*cluster(j)%vel
+   end do
+   
+   do i = 1, nMap
+      do j = 1, nMap
+         p%pm(j) = p%pm(j) - (hdt/hbar)*p%h(j,i)*p%rm(i)
+      end do
+   end do 
+   
+   call do_shake(cluster,atomPairs,mdspecs)
+   call get_distances_and_vectors(cluster,atomPairs)
+   call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
+   
+   !call necessary stuff to update h lambda lambda
+   call get_mapFactor(p)
+   call get_phi_inv_r_HS_phi_matrix(p)
+   call get_lambda_h_lambda_matrix(cluster,atomPairs,p)
+   call make_matrix_traceless(p%h,p%hTraceN,ht)
+
+   do i = 1, nMap
+      do j = 1, nMap
+         p%rm(j) = p%rm(j) + (dt/hbar)*p%h(j,i)*p%pm(i)
+      end do
+   end do 
+   
+   do i = 1, nMap
+      do j = 1, nMap
+         p%pm(j) = p%pm(j) - (hdt/hbar)*p%h(j,i)*p%rm(i)
+      end do
+   end do 
+
+   !call necessary stuff to update matrix elements to get force
+   !call get_phi_d_VBH_phi_matrix(p,atomPairs(1,2)%rij)
+   !call get_phi_inv_r2_HS_phi_matrix(p)
+   call get_phi_inv_r3_HS_phi_matrix(p)
+   call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
+   call get_mapFactor(p)
+   call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
+
+   !CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
+   !cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
+   !cluster(2)%vel = cluster(2)%vel - CCoMVel*cluster(2)%mass/(cluster(1)%mass-cluster(2)%mass)
+   do j = 1, nAtoms
+      cluster(j)%vel = cluster(j)%vel + forceToVelUnits*hdt*force%inAtom(j)%total/cluster(j)%mass
+   end do
+
+   call do_rattle(cluster,atomPairs,mdspecs)
+end subroutine velocity_verlet_int_one_timestep_pbme
 
 subroutine do_shake(at,pair,md)
 implicit none
