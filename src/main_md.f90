@@ -10,11 +10,12 @@ use quantumcalculations
 use maproutines
 implicit none
 
-integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
-integer :: nMapStates
+integer :: i,j,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
+integer :: nMapStates,unit1,singleState
 
 real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
-real(8),dimension(:,:),allocatable :: SMatrix, HMatrix
+real(8),dimension(:),allocatable :: allEigenVal, lambdaVal
+real(8),dimension(:,:),allocatable :: SMatrix, HMatrix, allEigenVec
 real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
@@ -27,7 +28,7 @@ type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
 type(vsl_stream_state) :: stream
 
 
-call read_md_input_file(nAtoms,nBasisFunCov,nBasisFunIon,nMapStates,md)
+call read_md_input_file(nAtoms,nBasisFunCov,nBasisFunIon,nMapStates,singleState,md)
 errcode = vslnewstream(stream,brng,md%seed)
 
 nBasisFun = nBasisFunCov + nBasisFunIon
@@ -56,6 +57,9 @@ allocate(pbme%hs(1:nMapStates,1:nMapStates))
 
 allocate(SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
+allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
+allocate(allEigenVal(1:nBasisFun))
+allocate(lambdaVal(1:nBasisFun))
 
 allocate(pbme%gridHSolvent(1:nAtoms))
 
@@ -126,7 +130,37 @@ call get_phi_KineticEnergy_phi_matrix(pbme%phi,d2p,pbme%phiKphi)
 call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,pbme%phiVsphi)
 
 HMatrix = pbme%phiKphi + pbme%phiVsphi
-call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
+!call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
+call get_subsystem_lambdas(HMatrix,SMatrix,allEigenVec,allEigenVal)
+
+open (newunit=unit1,file='lambdas.log')
+do i = 1, nPointsGrid
+   do j = 1, 12
+      lambdaVal(j) = sum(allEigenVec(1:12,j)*pbme%phi(1:12)%gridPointValue(i))
+   end do
+   write(unit1,'(i3,12f16.4)') i, (lambdaVal(j),j=1,12)
+end do
+close (unit1)
+
+if (nMapStates > 2) then
+   pbme%eigenvalues(1:nMapStates) = allEigenVal(1:nMapStates)
+   pbme%lambda(1:12,1:nMapStates) = allEigenVec(1:12,1:nMapStates)
+else if (nMapStates == 2) then
+   pbme%eigenvalues(1) = allEigenVal(1)
+   pbme%eigenvalues(2) = allEigenVal(3)
+   pbme%lambda(1:12,1) = allEigenVec(1:12,1)
+   pbme%lambda(1:12,2) = allEigenVec(1:12,3)
+else if (nMapStates == 1) then
+   if (singleState == 1) then
+      pbme%eigenvalues(1) = allEigenVal(1)
+      pbme%lambda(1:12,1) = allEigenVec(1:12,1)
+   else
+      pbme%eigenvalues(1) = allEigenVal(3)
+      pbme%lambda(1:12,1) = allEigenVec(1:12,3)
+   end if
+else
+   stop 'error in number of quantum states classically mapped (check nMapStates)'
+end if
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(pbme)
@@ -158,6 +192,10 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !pbme%rm(2) = 0.1205d0
 !pbme%pm(2) = 0.1244d0
 call do_mapping_variables_sampling(stream,pbme)
+!pbme%rm(1) = 0.0d0
+!pbme%pm(1) = 0.0d0
+!pbme%rm(2) = 0.1205d0
+!pbme%pm(2) = 0.1244d0
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)
