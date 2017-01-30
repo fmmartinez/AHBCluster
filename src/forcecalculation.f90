@@ -143,6 +143,7 @@ implicit none
       call make_matrix_traceless(dh,traceN,dht)
       call get_lambda_d_VCoMH_lambda_matrix(j,at(j),p,dh1)
       call make_matrix_traceless(dh1,traceN1,dht1)
+      
       call get_center_of_mass_vector(at(1:2),com)
       forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(com-at(j)%pos) &
          + (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij

@@ -286,7 +286,7 @@ implicit none
 
    do k = 1, nAtoms
       do i = 1, nPointsGrid+1
-         rch = p%gridHSolvent(1)%gridPoint(i)%rij - rab*(0.3882d0)
+         rch = rab*(0.3882d0) - p%gridHSolvent(1)%gridPoint(i)%rij 
          rsh = p%gridHSolvent(k)%gridPoint(i)%rij
          inverse3%gridPointValue(i) = rch/(rsh**3)
       end do
