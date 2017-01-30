@@ -221,7 +221,7 @@ do i = 1, md%nTrajectories
    print *, 'equilibration end'
    
    print *, 'production start'
-   call run_nve_dynamics_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
+   call run_nve_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
    print *, 'production end'
    
    print *, 'Trajectory',i,' end'
