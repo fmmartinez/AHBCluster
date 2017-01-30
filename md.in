@@ -1,5 +1,5 @@
-nAtoms nBasisFunCov nBasisFunIon nMapStates
-26     6            6            3
+nAtoms nBasisFunCov nBasisFunIon nMapStates ifOneState(1=Cov,2=Ion)
+26     6            6            3          1	
 seed nTrajectories
 4    2
 timeStep
