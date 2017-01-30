@@ -182,13 +182,11 @@ implicit none
    close(unit1)
 end subroutine run_thermal_equilibration
 
-subroutine run_nve_pbme(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
+subroutine run_nve_pbme(cluster,atomPairs,p,force,forceCCoM,md,trj)
 use ioroutines
 use stateevaluation
 use energycalculation
 use maproutines
-use mkl_vsl_type
-use mkl_vsl
 implicit none
    integer,intent(in) :: trj
    real(8),dimension(1:3),intent(inout) :: forceCCoM
@@ -197,7 +195,6 @@ implicit none
    type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
    type(MdData),intent(in) :: md
    type(QuantumStateData),intent(inout) :: p
-   type(vsl_stream_state),intent(in) :: stream
    
    character(17) :: outLogFile1, outLogFile2, trjxyzFile1
    integer :: i,j,try,nAtoms,nMapStates,unit1,unit2,unit3
