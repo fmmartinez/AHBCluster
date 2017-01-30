@@ -220,9 +220,9 @@ do i = 1, md%nTrajectories
    call run_thermal_equilibration_pbme_only_11(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
    print *, 'equilibration end'
    
-   !print *, 'production start'
-   !call run_nve_dynamics(cluster,atomPairs,force,md,i)
-   !print *, 'production end'
+   print *, 'production start'
+   call run_nve_dynamics_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
+   print *, 'production end'
    
    print *, 'Trajectory',i,' end'
    print *, ' '
