@@ -277,12 +277,12 @@ implicit none
    type(vsl_stream_state),intent(in) :: stream
    
    character(17) :: outLogFile1, outLogFile2, trjxyzFile1
-   integer :: i,i_old,j,try,nAtoms,nMapStates,unit1,unit2,unit3
-   real(8) :: tempInK, maxDistAS, clusterRadius
+   integer :: i,i_old,j,k,try,nAtoms,nMapStates,unit1,unit2,unit3
+   real(8) :: tempInK, distCS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
    real(8) :: solPol
-   real(8),dimension(1:3) :: forceCCoM_old
+   real(8),dimension(1:3) :: forceCCoM_old, com
    type(Atom),dimension(:),allocatable :: cluster_old
    type(Forces) :: force_old
    type(QuantumStateData) :: p_old
@@ -308,7 +308,7 @@ implicit none
    i_old = i
 
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
-   clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
+   clusterRadius = 2d0*(nAtoms/0.012d0)**(1d0/3d0)
    
    write(outLogFile1,'(a9,i4.4,a4)') 'outputEq1',trj,'.log'
    write(outLogFile2,'(a9,i4.4,a4)') 'outputEq2',trj,'.log'
@@ -330,29 +330,32 @@ implicit none
          p_old = p
       end if
       
-      maxDistAS = clusterRadius*1.75d0*(0.75d0+(i/md%eqPhaseSteps)*(0.25/md%eqPhases))
-      if (maxval(atomPairs(1,1:nAtoms)%rij) > maxDistAS) then
-         cluster = cluster_old
-         atomPairs = atomPairs_old
-         force = force_old
-         forceCCoM_old = forceCCoM
-         print *, try, 'evaporated and failed at', i, maxval(atomPairs(1,1:nAtoms)%rij)
-         i = i_old
-         p = p_old
-         try = try + 1
-         print *, 'restart', try
-         call generate_velocities(cluster,stream,tempInK)
-         call remove_CoM_movement(cluster)
-         call do_rattle(cluster,atomPairs,md)
-         call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
-         !regenerate regenerable stuff from quantum state
-         !p%rm = 0d0
-         !p%pm = 0d0
-         !p%rm(1) = 0.1205d0
-         !p%pm(1) = 0.1244d0
-         call do_mapping_variables_sampling(stream,p)
-         call get_mapFactor(p)
-      end if
+      call get_center_of_mass_vector(cluster,com)
+      do k = 1, nAtoms
+         distCS = sqrt(sum((com - cluster(k)%pos)**2))
+         if (distCS > clusterRadius) then
+            cluster = cluster_old
+            atomPairs = atomPairs_old
+            force = force_old
+            forceCCoM_old = forceCCoM
+            print *, try, 'evaporated and failed at', i, distCS
+            i = i_old
+            p = p_old
+            try = try + 1
+            print *, 'restart', try
+            call generate_velocities(cluster,stream,tempInK)
+            call remove_CoM_movement(cluster)
+            call do_rattle(cluster,atomPairs,md)
+            call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
+            !regenerate regenerable stuff from quantum state
+            !p%rm = 0d0
+            !p%pm = 0d0
+            !p%rm(1) = 0.1205d0
+            !p%pm(1) = 0.1244d0
+            call do_mapping_variables_sampling(stream,p)
+            call get_mapFactor(p)
+         end if
+      end do
 
       if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
       if (mod(i,(i/md%eqPhaseSteps+1)*md%stepFreqVelRescale) == 0) then
@@ -526,15 +529,20 @@ implicit none
    type(MdData),intent(in) :: mdspecs
    type(QuantumStateData),intent(inout) :: p
    
-   integer :: i,j, nAtoms, nMap
+   integer :: i,j, nAtoms, nMap, nBasisFun
    real(8) :: dt,hdt
    real(8),dimension(1:3) :: CCoMvel
-   real(8),dimension(:,:),allocatable :: ht
+   real(8),dimension(:),allocatable :: allEigenVal
+   real(8),dimension(:,:),allocatable :: ht, HMatrix, allEigenVec
 
    nAtoms = size(cluster)
    nMap = size(p%eigenvalues)
+   nBasisFun = size(p%phi,1)
    
    allocate(ht(1:nMap,1:nMap))
+   allocate(HMatrix(1:nBasisFun,1:nBasisFun))
+   allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
+   allocate(allEigenVal(1:nBasisFun))
 
    dt = mdspecs%timeStep
    hdt = mdspecs%halfTimeStep
@@ -556,6 +564,32 @@ implicit none
    call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
    call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
+   
+   !get new lambdas if requested
+   if (mdSpecs%updateLambdasOntheFly == 1) then
+      call get_phi_Vsubsystem_phi_matrix(p%phi,atomPairs(1,2)%rij,p%phiVsphi)
+      HMatrix = p%phiKphi + p%phiVsphi
+      call get_subsystem_lambdas(HMatrix,p%SMatrix,allEigenVec,allEigenVal)
+      if (nMap > 2) then
+         p%eigenvalues(1:nMap) = allEigenVal(1:nMap)
+         p%lambda(1:nBasisFun,1:nMap) = allEigenVec(1:nBasisFun,1:nMap)
+      else if (nMap == 2) then
+         p%eigenvalues(1) = allEigenVal(1)
+         p%eigenvalues(2) = allEigenVal(3)
+         p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
+         p%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
+      else if (nMap == 1) then
+         if (mdSpecs%singleMap == 1) then
+            p%eigenvalues(1) = allEigenVal(1)
+            p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
+         else
+            p%eigenvalues(1) = allEigenVal(3)
+            p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,3)
+         end if
+      else
+         stop 'error in number of quantum states classically mapped (check nMapStates)'
+      end if
+   end if
    
    !call necessary stuff to update h lambda lambda
    call get_mapFactor(p)
