@@ -11,11 +11,11 @@ use maproutines
 implicit none
 
 integer :: i,j,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
-integer :: nMapStates,unit1,singleState
+integer :: nMapStates,unit1
 
 real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
 real(8),dimension(:),allocatable :: allEigenVal, lambdaVal
-real(8),dimension(:,:),allocatable :: SMatrix, HMatrix, allEigenVec
+real(8),dimension(:,:),allocatable :: HMatrix, allEigenVec
 real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
@@ -28,7 +28,7 @@ type(BasisFunction),dimension(:),allocatable :: d2pCov, d2pIon, d2p
 type(vsl_stream_state) :: stream
 
 
-call read_md_input_file(nAtoms,nBasisFunCov,nBasisFunIon,nMapStates,singleState,md)
+call read_md_input_file(nAtoms,nBasisFunCov,nBasisFunIon,nMapStates,md)
 errcode = vslnewstream(stream,brng,md%seed)
 
 nBasisFun = nBasisFunCov + nBasisFunIon
@@ -55,7 +55,7 @@ allocate(pbme%phiKphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%phiVsphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%hs(1:nMapStates,1:nMapStates))
 
-allocate(SMatrix(1:nBasisFun,1:nBasisFun))
+allocate(pbme%SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
 allocate(allEigenVal(1:nBasisFun))
@@ -122,7 +122,7 @@ call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 call initialize_basis_functions_on_each_well(phiCov,phiIon)
 pbme%phi(1:nBasisFunCov) = phiCov
 pbme%phi(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = phiIon
-call get_overlap_matrix(pbme%phi,SMatrix)
+call get_overlap_matrix(pbme%phi,pbme%SMatrix)
 call get_double_derivative_basis_functions_on_each_well(d2pCov,d2pIon)
 d2p(1:nBasisFunCov) = d2pCov
 d2p(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = d2pIon
@@ -134,7 +134,7 @@ HMatrix = pbme%phiKphi + pbme%phiVsphi
 !do i = 1, nBasisFun
 !   print '(14f12.4)', SMatrix(1:nBasisFun,i)
 !end do
-call get_subsystem_lambdas(HMatrix,SMatrix,allEigenVec,allEigenVal)
+call get_subsystem_lambdas(HMatrix,pbme%SMatrix,allEigenVec,allEigenVal)
 
 open (newunit=unit1,file='lambdas.log')
 do i = 1, nPointsGrid
@@ -154,7 +154,7 @@ else if (nMapStates == 2) then
    pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
    pbme%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
 else if (nMapStates == 1) then
-   if (singleState == 1) then
+   if (md%singleMap == 1) then
       pbme%eigenvalues(1) = allEigenVal(1)
       pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
    else

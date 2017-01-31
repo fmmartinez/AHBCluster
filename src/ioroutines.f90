@@ -4,16 +4,16 @@ implicit none
 
 contains
 
-subroutine read_md_input_file(n,nBasisFunCov,nBasisFunIon,nMapStates,ss,md)
+subroutine read_md_input_file(n,nBasisFunCov,nBasisFunIon,nMapStates,md)
 implicit none
-   integer,intent(inout) :: n,nBasisFunCov,nBasisFunIon,nMapStates,ss
+   integer,intent(inout) :: n,nBasisFunCov,nBasisFunIon,nMapStates
    type(MdData),intent(inout) :: md
 
    integer :: unit1
 
    open(newunit=unit1,file='md.in')
       read(unit1,*)
-      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, ss
+      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, md%singleMap
       read(unit1,*)
       read(unit1,*) md%seed, md%nTrajectories
       read(unit1,*)
@@ -28,6 +28,8 @@ implicit none
       read(unit1,*) md%stepFreqVelRescale,md%stepFreqCoMRemoval
       read(unit1,*)
       read(unit1,*) md%stepFreqOutTrajectory, md%stepFreqOutLog
+      read(unit1,*)
+      read(unit1,*) md%updateLambdasOntheFly
    close(unit1)
    
    md%halfTimeStep = md%timeStep/2d0

@@ -73,6 +73,7 @@ type MdData
    integer :: stepFreqCoMRemoval
    integer :: prodSteps
    integer :: nBondConstraints
+   integer :: singleMap, updateLambdasOntheFly
    real(8) :: timeStep, halfTimeStep
    real(8) :: initialEqTempInK, targetTempInK
 end type MdData
@@ -100,7 +101,7 @@ end type VectorForMatrix
 type QuantumStateData
    real(8) :: hTraceN
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
-   real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi
+   real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi, SMatrix
    real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
    real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs, hs
