@@ -10,7 +10,9 @@ integer,parameter :: nPointsGrid = 40
 real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.4d0
 real(8),parameter :: binWidth = (upperLimit-lowerLimit)/nPointsGrid
 real(8),parameter :: covMinWell = 1.0d0, ionMinWell = 1.6d0
-real(8),parameter :: alpha = 7.735d0
+real(8),parameter :: alpha0 = 7.735d0
+real(8),parameter :: alphaCov = 9.26d0
+real(8),parameter :: alphaIon = 11.42d0
 !-->
 
 integer,parameter :: brng = VSL_BRNG_MT2203

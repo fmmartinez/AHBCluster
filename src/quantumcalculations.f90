@@ -747,7 +747,7 @@ implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
    
    integer :: i,j,nbc,nbi
-   real(8) :: q
+   real(8) :: q,alpha
    
    nbc = size(cov)
    nbi = size(ion)
@@ -757,10 +757,12 @@ implicit none
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state
       do j = 1, nbc
-         cov(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-covMinWell)
+         alpha = alphaCov
+         cov(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-covMinWell,alpha)
       end do
       do j = 1, nbi
-         ion(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-ionMinWell)
+         alpha = alphaIon
+         ion(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-ionMinWell,alpha)
       end do
    end do
 end subroutine get_double_derivative_basis_functions_on_each_well
@@ -770,7 +772,7 @@ implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
    
    integer :: i,j,nbc,nbi
-   real(8) :: q
+   real(8) :: q,alpha
    
    nbc = size(cov)
    nbi = size(ion)
@@ -780,19 +782,21 @@ implicit none
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state
       do j = 1, nbc
-         cov(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-covMinWell)
+         alpha = alphaCov
+         cov(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-covMinWell,alpha)
       end do
       do j = 1, nbi
-         ion(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-ionMinWell)
+         alpha = alphaIon
+         ion(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-ionMinWell,alpha)
       end do
    end do
 end subroutine initialize_basis_functions_on_each_well
 
 !---elementary calculations
-function eval_harmonic_oscillator_wavefunction(i,dx) result(phi)
+function eval_harmonic_oscillator_wavefunction(i,dx,alpha) result(phi)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
 
    real(8) :: phi
    real(8) :: hermite,factorial,exponent1
@@ -805,15 +809,15 @@ implicit none
 
 end function eval_harmonic_oscillator_wavefunction
 
-function eval_d2_harmonic_oscillator_wavefunction(i,dx) result(d2p)
+function eval_d2_harmonic_oscillator_wavefunction(i,dx,alpha) result(d2p)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
 
    real(8) :: d2p,a,f,g,df,dg,d2f,d2g,factorial
 
-   call eval_derivatives_gaussian_function(dx,g,dg,d2g)
-   call eval_derivativez_hermite_polynomial(i,alpha*dx,f,df,d2f)
+   call eval_derivatives_gaussian_function(alpha,dx,g,dg,d2g)
+   call eval_derivativez_hermite_polynomial(i,alpha,alpha*dx,f,df,d2f)
    factorial = eval_factorial(i)
 
    a = sqrt(alpha/(2d0**i*factorial*pisqrt))
@@ -821,10 +825,10 @@ implicit none
 
 end function eval_d2_harmonic_oscillator_wavefunction
 
-subroutine eval_derivatives_gaussian_function(dx,d0,d1,d2)
+subroutine eval_derivatives_gaussian_function(alpha,dx,d0,d1,d2)
 !the form of the gaussian is exp(-dx^2*c^2/2)
 implicit none
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
    real(8),intent(out) :: d0,d1,d2
    
    d0 = exp(-0.5d0*alpha**2*dx**2)
@@ -835,10 +839,10 @@ implicit none
 
 end subroutine eval_derivatives_gaussian_function
 
-subroutine eval_derivativez_hermite_polynomial(i,dx,d0,d1,d2)
+subroutine eval_derivativez_hermite_polynomial(i,alpha,dx,d0,d1,d2)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
    real(8),intent(out) :: d0,d1,d2
 
    d0 = eval_hermite_polynomial(i,dx)
