@@ -5,12 +5,14 @@ seed nTrajectories
 timeStep
 0.0001d0
 EqSteps EqTries EqPhases stepFreqEqSave
-1500000  20      10       300000
+1500000  20      1       300000
 EqInitialTemp EqTargetTemp
-120            150
+150            150
 ProdSteps
 1500000
 stepFreqVelRescale stepFreqCoMRemoval
 20000                  100
 stepFreqOutTrajectory stepFreqOutLog
 1000                  100
+diagOntheFly(1=yes,other=no) 
+1
