@@ -131,32 +131,35 @@ call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,pbme%phiV
 
 HMatrix = pbme%phiKphi + pbme%phiVsphi
 !call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
+!do i = 1, nBasisFun
+!   print '(14f12.4)', SMatrix(1:nBasisFun,i)
+!end do
 call get_subsystem_lambdas(HMatrix,SMatrix,allEigenVec,allEigenVal)
 
 open (newunit=unit1,file='lambdas.log')
 do i = 1, nPointsGrid
-   do j = 1, 12
-      lambdaVal(j) = sum(allEigenVec(1:12,j)*pbme%phi(1:12)%gridPointValue(i))
+   do j = 1, nBasisFun
+      lambdaVal(j) = sum(allEigenVec(1:nBasisFun,j)*pbme%phi(1:nBasisFun)%gridPointValue(i))
    end do
-   write(unit1,'(i3,12f16.4)') i, (lambdaVal(j),j=1,12)
+   write(unit1,'(i3,24f16.4)') i, (lambdaVal(j),j=1,nBasisFun)
 end do
 close (unit1)
 
 if (nMapStates > 2) then
    pbme%eigenvalues(1:nMapStates) = allEigenVal(1:nMapStates)
-   pbme%lambda(1:12,1:nMapStates) = allEigenVec(1:12,1:nMapStates)
+   pbme%lambda(1:nBasisFun,1:nMapStates) = allEigenVec(1:nBasisFun,1:nMapStates)
 else if (nMapStates == 2) then
    pbme%eigenvalues(1) = allEigenVal(1)
    pbme%eigenvalues(2) = allEigenVal(3)
-   pbme%lambda(1:12,1) = allEigenVec(1:12,1)
-   pbme%lambda(1:12,2) = allEigenVec(1:12,3)
+   pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
+   pbme%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
 else if (nMapStates == 1) then
    if (singleState == 1) then
       pbme%eigenvalues(1) = allEigenVal(1)
-      pbme%lambda(1:12,1) = allEigenVec(1:12,1)
+      pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
    else
       pbme%eigenvalues(1) = allEigenVal(3)
-      pbme%lambda(1:12,1) = allEigenVec(1:12,3)
+      pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,3)
    end if
 else
    stop 'error in number of quantum states classically mapped (check nMapStates)'
@@ -165,6 +168,14 @@ end if
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(pbme)
    !previous subroutine called only once, no need to update
+!print '(12f12.4)', pbme%pqAp
+!print *, '-'
+!print '(12f12.4)', pbme%pqBp
+!do i = 1, nBasisFun
+!   print *, i, allEigenVal(i)
+!   print '(24f12.4)', allEigenVec(1:nBasisFun,i)
+!end do
+
 call get_phi_inv_r_HS_phi_matrix(pbme)
 !h matrix
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,pbme)
@@ -186,7 +197,7 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !print '(12f9.4)', pbme%lambda(1:12,1)
 !print *, 'l2'
 !print '(12f9.4)', pbme%lambda(1:12,2)
-
+!stop
 !pbme%rm = 0.0d0
 !pbme%pm = 0.0d0
 !pbme%rm(2) = 0.1205d0
