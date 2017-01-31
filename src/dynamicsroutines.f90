@@ -259,7 +259,7 @@ implicit none
    close(unit1)
 end subroutine run_nve_pbme
 
-subroutine run_thermal_equilibration_pbme_only_11(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
+subroutine run_thermal_equilibration_pbme(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
 use ioroutines
 use stateevaluation
 use energycalculation
@@ -401,7 +401,7 @@ implicit none
    close(unit3)
    close(unit2)
    close(unit1)
-end subroutine run_thermal_equilibration_pbme_only_11
+end subroutine run_thermal_equilibration_pbme
 
 subroutine run_thermal_equilibration_pbme_confined_cluster(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
 use ioroutines

@@ -228,7 +228,7 @@ do i = 1, md%nTrajectories
    
    print *, 'equilibration start'
    !call run_thermal_equilibration(cluster,atomPairs,force,md,stream,i)
-   call run_thermal_equilibration_pbme_only_11(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   call run_thermal_equilibration_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
    print *, 'equilibration end'
    
    print *, 'production start'
