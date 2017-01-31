@@ -566,8 +566,9 @@ implicit none
    call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
    
    !get new lambdas if requested
+   !next line is necessary for h lambda lambda anyways
+   call get_phi_Vsubsystem_phi_matrix(p%phi,atomPairs(1,2)%rij,p%phiVsphi)
    if (mdSpecs%updateLambdasOntheFly == 1) then
-      call get_phi_Vsubsystem_phi_matrix(p%phi,atomPairs(1,2)%rij,p%phiVsphi)
       HMatrix = p%phiKphi + p%phiVsphi
       call get_subsystem_lambdas(HMatrix,p%SMatrix,allEigenVec,allEigenVal)
       if (nMap > 2) then

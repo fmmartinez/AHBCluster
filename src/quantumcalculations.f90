@@ -311,7 +311,6 @@ implicit none
    m = size(p%eigenvalues)
    
    p%h = 0d0   
-   call get_phi_Vsubsystem_phi_matrix(p%phi,pair(1,2)%rij,p%phiVsphi)
    call get_lambda_hs_lambda_matrix(p)
    !do i = 1, m
    !   p%h(i,i) = p%eigenvalues(i)
