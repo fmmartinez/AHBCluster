@@ -222,22 +222,18 @@ implicit none
    
    integer :: i,nm
    real(8) :: trace
-   real(8),dimension(:,:),allocatable :: vcsel
+   real(8),dimension(:,:),allocatable :: vcsel,vcatt
 
    nm = size(p%eigenvalues)
    
    allocate(vcsel(1:nm,1:nm))
+   allocate(vcatt(1:nm,1:nm))
    vcsel = 0d0
+   vcatt = 0d0
 
    ec = get_complex_energy_repulsion_part(pairs(1,2)%rij)
-   trace = 0d0
-   do i = 1, nm
-      trace = trace + p%eigenvalues(i)
-   end do
-   do i = 1, nm
-      ec = ec + (p%eigenvalues(i)-trace/nm)*(p%rm(i)**2+p%pm(i)**2)/(2d0*hbar)
-   end do
-   ec = ec + trace/nm
+   call make_matrix_traceless(p%hs,trace,vcatt)
+   ec = ec + get_map_contribution(vcatt,p%mapFactor) + trace
 
    ecslj = get_complexsolvent_lj_energy(pairs)
    call make_matrix_traceless((p%vas+p%vbs+p%vhs),trace,vcsel)
