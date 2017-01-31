@@ -596,6 +596,7 @@ implicit none
    call get_phi_inv_r_HS_phi_matrix(p)
    call get_lambda_h_lambda_matrix(cluster,atomPairs,p)
    call make_matrix_traceless(p%h,p%hTraceN,ht)
+   p%h = ht
 
    do i = 1, nMap
       do j = 1, nMap
