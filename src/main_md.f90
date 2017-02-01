@@ -55,6 +55,8 @@ allocate(pbme%phiKphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%phiVsphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%hs(1:nMapStates,1:nMapStates))
 
+allocate(pbme%prAHp(1:nBasisFun,1:nBasisFun))
+
 allocate(pbme%SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
@@ -200,18 +202,18 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !stop
 !pbme%rm = 0.0d0
 !pbme%pm = 0.0d0
-!pbme%rm(2) = 0.1205d0
-!pbme%pm(2) = 0.1244d0
+!pbme%rm(2) = 0.16d0
+!pbme%pm(2) = 0.16d0
 call do_mapping_variables_sampling(stream,pbme)
-!pbme%rm(1) = 0.0d0
-!pbme%pm(1) = 0.0d0
-!pbme%rm(2) = 0.1205d0
-!pbme%pm(2) = 0.1244d0
+!pbme%rm = 0.0d0
+!pbme%pm = 0.0d0
+!pbme%rm(3) = 0.16d0
+!pbme%pm(3) = 0.16d0
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)
 
-!call get_phi_q_phi_matrix(phi,gridHSolvent,pqp)
+call get_phi_rAH_phi_matrix(pbme)
 !call get_lambda_q_lambda_matrix(lambda,pqp,lql)
 !print *, 'qm',get_map_contribution(lql,mapFactor)
 

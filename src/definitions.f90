@@ -102,7 +102,7 @@ type QuantumStateData
    real(8) :: hTraceN
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
    real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi, SMatrix
-   real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
+   real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp,prAHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
    real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs, hs
    type(BasisFunction),dimension(:),allocatable :: phi

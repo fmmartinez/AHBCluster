@@ -388,6 +388,7 @@ implicit none
             ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
          !write(999,'(i10,24f12.6)') i, (force%inAtom(j)%total,j=1,nAtoms)
          !write(888,'(i10,24f12.6)') i, (atomPairs(3,j)%rij,j=1,nAtoms)
+         write(887,*) i, get_apparent_rAH(p)
       end if
 
       if (try > md%maxEqTries) exit

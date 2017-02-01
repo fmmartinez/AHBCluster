@@ -96,27 +96,25 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
-subroutine get_phi_q_phi_matrix(phi,HSData,H)
+subroutine get_phi_rAH_phi_matrix(p)
 implicit none
-   type(EvalOnGridHData),dimension(:),intent(in) :: HSData
-   real(8),dimension(:,:),intent(inout) :: H
-   type(BasisFunction),dimension(:),intent(in) :: phi
+   type(QuantumStateData),intent(inout) :: p
    
    integer :: i,j,k,n
    type(EvalOnGridFunction) :: rHS
    
-   n = size(phi)
+   n = size(p%phi)
 
    do i = 1, nPointsGrid+1
-      rHS%gridPointValue(i) = HSData(1)%gridPoint(i)%rij
+      rHS%gridPointValue(i) = p%gridHSolvent(1)%gridPoint(i)%rij
    end do
    
    do i = 1, n
       do j = 1, n
-         H(i,j) = integrate_trapezoid_rule(phi(i),rHS,phi(j))
+         p%prAHp(i,j) = integrate_trapezoid_rule(p%phi(i),rHS,p%phi(j))
       end do
    end do
-end subroutine get_phi_q_phi_matrix
+end subroutine get_phi_rAH_phi_matrix
 
 !---various matrix elements used through energy and force calculations
 subroutine get_phi_charge_AB_phi_matrix(p)
