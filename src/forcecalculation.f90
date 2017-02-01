@@ -106,16 +106,15 @@ implicit none
    call get_lambda_d_VAH_lambda_matrix(p,dh)
    call make_matrix_traceless(dh,traceN,dht)
    forceHAtomTemp(1) = get_map_contribution(-dht,p%mapFactor) - traceN
-!write(999,*) 'mapping AH', dh, p%mapFactor
+   
    forceAtComplexCoM = forceHAtomTemp(1)*pairs(1,2)%vectorij/pairs(2,1)%rij
+  
    call get_lambda_d_VBH_lambda_matrix(p,dh)
    call make_matrix_traceless(dh,traceN,dht)
    forceHAtomTemp(2) = get_map_contribution(-dht,p%mapFactor) - traceN
-!write(999,*) 'mapping BH', dh, p%mapFactor
+   
    forceAtComplexCoM = forceAtComplexCoM + (forceHAtomTemp(2)*pairs(2,1)%vectorij)/pairs(2,1)%rij
-!write(999,*) force%atomPair(1,2), forceHAtomTemp(1), forceHAtomTemp(2)
-!write(999,*) 'classical', get_AH_force(1d0), get_BH_force(1.6d0)
-!stop
+   
    !AB vs S
    do j = 3, n
       !A vs S
@@ -145,38 +144,13 @@ implicit none
       call make_matrix_traceless(dh1,traceN1,dht1)
       
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(com-at(j)%pos) &
+      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(at(j)%pos-com) &
          + (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
+      
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
    end do
-!write(999,*) 'C-Cl vs A', force%atomPair(1,3), force%atomPair(1,4)
-!write(999,*) 'classical', get_ljelec_force(pairs(1,3)%ljEps,pairs(1,3)%ljSig,-0.125d0,pairs(1,3)%rij),&
-!                          get_ljelec_force(pairs(1,4)%ljEps,pairs(1,4)%ljSig,0.125d0,pairs(1,4)%rij)
-!write(999,*) 'C-Cl vs B', force%atomPair(2,3), force%atomPair(2,4)
-!write(999,*) 'classical', get_ljelec_force(pairs(2,3)%ljEps,pairs(2,3)%ljSig,0.0d0,pairs(2,3)%rij),&
-!                          get_ljelec_force(pairs(2,4)%ljEps,pairs(2,4)%ljSig,0.0d0,pairs(2,4)%rij)
-!write(999,*) 'C-Cl vs H',forceHAtomTemp(3),forceHAtomTemp(4)   
-!write(999,*) 'classical',get_HS_force(0.125d0,pairs(1,3)%rij),&
-!                                    get_HS_force(0.125d0,pairs(1,4)%rij)
-!if (force%atomPair(1,3) > force%atomPair(1,4)) then
-!   write(998,*) 'kek'
-!   write(998,'(12f10.4)') p%pir3p(3)%mat
-!   write(998,*) 'kek'
-!   write(998,*) dh
-!   write(997,*) 'kek'
-!   write(997,'(12f10.4)') p%pcr3p(3)%mat
-!   write(997,*) 'kek'
-!   write(997,*) dh1
-!end if
-!write(888,*) 'u vec C-H'
-!write(888,*) forceVecHAtomTemp(3)%vecij/forceHAtomTemp(3)
-!write(888,*) &
-!p%gridHSolvent(3)%gridPoint(17)%vectorij/p%gridHSolvent(3)%gridPoint(17)%rij
-!write(777,*) 'u vec Cl-H'
-!write(777,*) forceVecHAtomTemp(4)%vecij/forceHAtomTemp(4)
-!write(777,*) &
-!p%gridHSolvent(4)%gridPoint(17)%vectorij/p%gridHSolvent(4)%gridPoint(17)%rij
+   
    !S vs S
    do i = 3, n-1, 2
       force%atomPair(i,i+1) = 0d0!get_SS_bond_force(pairs(i,i+1)%rij)
@@ -216,15 +190,12 @@ implicit none
    do i = 3, n
       force%inAtom(i)%total = force%inAtom(i)%total + forceVecHAtomTemp(i)%vecij
    end do
-
-   !do i = 1, n
-   !  write(999,*) force%inAtom(i)%total
-   !end do
-   !write(999,*) forceAtComplexCoM
-   !write (999,*) 'sums without CoM'
+   
+   !check total force
    !write(999,*) &
    !sum(force%inAtom(1:n)%total(1)),sum(force%inAtom(1:n)%total(2)),sum(force%inAtom(1:n)%total(3))
    !write(999,*) '---'
+   !stop
 end subroutine get_all_forces_pbme
 
 subroutine get_all_forces_with_H(pairs,force)
