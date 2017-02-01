@@ -618,7 +618,8 @@ implicit none
    call get_phi_inv_r3_HS_phi_matrix(p)
    call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs(1,2)%rij,p)
    call get_mapFactor(p)
-   call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
+   !call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
+   call get_all_forces_pbme_virtual_H(cluster,atomPairs,p,force,forceCCoM)
 
    !CCoMvel = forceToVelUnits*hdt*forceCCoM/(cluster(1)%mass+cluster(2)%mass)
    !cluster(1)%vel = cluster(1)%vel + CCoMVel*cluster(1)%mass/(cluster(1)%mass-cluster(2)%mass)
