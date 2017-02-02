@@ -237,7 +237,7 @@ implicit none
          write(unit1,'(i10,24f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp, instaTempInK
-         write(unit2,'(i10,24f12.6)') i, (p%h(j,j),j=1,nMapStates),&
+         write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p),(p%h(j,j),j=1,nMapStates),&
             ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
       end if
       
@@ -308,7 +308,7 @@ implicit none
    i_old = i
 
    dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
-   clusterRadius = 2d0*(nAtoms/0.012d0)**(1d0/3d0)
+   clusterRadius = (nAtoms/0.012d0)**(1d0/3d0)
    
    write(outLogFile1,'(a9,i4.4,a4)') 'outputEq1',trj,'.log'
    write(outLogFile2,'(a9,i4.4,a4)') 'outputEq2',trj,'.log'
@@ -348,10 +348,6 @@ implicit none
             call do_rattle(cluster,atomPairs,md)
             call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
             !regenerate regenerable stuff from quantum state
-            !p%rm = 0d0
-            !p%pm = 0d0
-            !p%rm(1) = 0.1205d0
-            !p%pm(1) = 0.1244d0
             call do_mapping_variables_sampling(stream,p)
             call get_mapFactor(p)
          end if
@@ -384,11 +380,10 @@ implicit none
          write(unit1,'(i10,15f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
-         write(unit2,'(i10,24f12.6)') i, (p%h(j,j),j=1,nMapStates),&
+         write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p), (p%h(j,j),j=1,nMapStates),&
             ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
          !write(999,'(i10,24f12.6)') i, (force%inAtom(j)%total,j=1,nAtoms)
          !write(888,'(i10,24f12.6)') i, (atomPairs(3,j)%rij,j=1,nAtoms)
-         write(887,*) i, get_apparent_rAH(p)
       end if
 
       if (try > md%maxEqTries) exit
