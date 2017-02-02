@@ -15,7 +15,7 @@ implicit none
       read(unit1,*)
       read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, md%singleMap
       read(unit1,*)
-      read(unit1,*) md%seed, md%nTrajectories
+      read(unit1,*) md%seed, md%nTrajectories, md%confinement
       read(unit1,*)
       read(unit1,*) md%timeStep
       read(unit1,*)

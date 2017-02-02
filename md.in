@@ -1,7 +1,7 @@
 nAtoms nBasisFunCov nBasisFunIon nMapStates ifOneState(1=Cov,2=Ion)
 26     6            6            3          1	
-seed nTrajectories
-4    2
+seed nTrajectories confinement(1=yes,0=no)
+4    2             1
 timeStep
 0.0001d0
 EqSteps EqTries EqPhases stepFreqEqSave

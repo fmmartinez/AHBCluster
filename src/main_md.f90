@@ -229,13 +229,16 @@ do i = 1, md%nTrajectories
    print *, 'Trajectory',i,' start'
    
    print *, 'equilibration start'
-   !call run_thermal_equilibration(cluster,atomPairs,force,md,stream,i)
-   call run_thermal_equilibration_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   if (md%confinement == 1) then
+      call run_thermal_equilibration_pbme_confined_cluster(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   else
+      call run_thermal_equilibration_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   end if
    print *, 'equilibration end'
    
-   print *, 'production start'
-   call run_nve_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
-   print *, 'production end'
+   !print *, 'production start'
+   !call run_nve_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
+   !print *, 'production end'
    
    print *, 'Trajectory',i,' end'
    print *, ' '
