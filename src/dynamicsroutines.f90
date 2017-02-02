@@ -692,13 +692,12 @@ implicit none
    call get_all_forces_pbme(cluster,atomPairs,p,force,forceCCoM)
 
    !check if all atoms are in confinement otherwise add force to those not there
-   clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
-   clusterMaxRadius = 2d0*clusterRadius
+   clusterRadius = 0.9d0*(nAtoms/(0.012d0))**(1d0/3d0)
    call get_center_of_mass_vector(cluster,com)
    do i = 1, nAtoms
-      d = sum((cluster(i)%pos - com)**2)
-      if (d >= clusterMaxRadius) then
-         force%inAtom(i)%total = force%inAtom(i)%total - (8.4d0*cluster(i)%pos - com)
+      d = sqrt(sum((cluster(i)%pos - com)**2))
+      if (d >= clusterRadius) then
+         force%inAtom(i)%total = force%inAtom(i)%total - (2d0*(cluster(i)%pos - com))
       end if
    end do
    
