@@ -212,7 +212,8 @@ do i = 1, md%nTrajectories
    !forces
    if (md%appMethod == 1) then
       call get_all_forces_pbme(cluster_initial,atomPairs_initial,quantum,force,forceCCoM)
-   !else
+   else
+      call get_all_forces_fbts(cluster_initial,atomPairs_initial,quantum,force,forceCCoM)
    end if
 
    print *, 'Trajectory',i,' start'
@@ -224,6 +225,8 @@ do i = 1, md%nTrajectories
       else
          call run_thermal_equilibration_pbme(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i)
       end if
+   else
+      call run_thermal_equilibration_fbts(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i) 
    end if
    print *, 'equilibration end'
    
