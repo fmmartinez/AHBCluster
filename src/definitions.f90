@@ -65,7 +65,7 @@ type Forces
 end type Forces
 
 type MdData
-   integer :: seed, eqSteps, nTrajectories, confinement
+   integer :: appMethod, seed, eqSteps, nTrajectories, confinement
    integer :: stepFreqEqSave, stepFreqOutTrajectory
    integer :: stepFreqOutLog
    integer :: maxEqTries, eqPhases, eqPhaseSteps
@@ -101,9 +101,11 @@ end type VectorForMatrix
 type QuantumStateData
    real(8) :: hTraceN
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
+   real(8),dimension(:),allocatable :: q1,p1,q2,p2
    real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi, SMatrix
    real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp,prAHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
+   real(8),dimension(:,:),allocatable :: mapFactor1,mapFactor2
    real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs, hs
    type(BasisFunction),dimension(:),allocatable :: phi
    type(EvalOnGridHData),dimension(:),allocatable :: gridHSolvent
