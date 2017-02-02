@@ -10,11 +10,12 @@ use quantumcalculations
 use maproutines
 implicit none
 
-integer :: i,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
-integer :: nMapStates
+integer :: i,j,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
+integer :: nMapStates,unit1
 
 real(8),dimension(1:3) :: forceCCoM, forceCCoM_initial
-real(8),dimension(:,:),allocatable :: SMatrix, HMatrix
+real(8),dimension(:),allocatable :: allEigenVal, lambdaVal
+real(8),dimension(:,:),allocatable :: HMatrix, allEigenVec
 real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
 type(Atom),dimension(:),allocatable :: cluster, cluster_initial
@@ -54,8 +55,13 @@ allocate(pbme%phiKphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%phiVsphi(1:nBasisFun,1:nBasisFun))
 allocate(pbme%hs(1:nMapStates,1:nMapStates))
 
-allocate(SMatrix(1:nBasisFun,1:nBasisFun))
+allocate(pbme%prAHp(1:nBasisFun,1:nBasisFun))
+
+allocate(pbme%SMatrix(1:nBasisFun,1:nBasisFun))
 allocate(HMatrix(1:nBasisFun,1:nBasisFun))
+allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
+allocate(allEigenVal(1:nBasisFun))
+allocate(lambdaVal(1:nBasisFun))
 
 allocate(pbme%gridHSolvent(1:nAtoms))
 
@@ -118,7 +124,7 @@ call get_force_field_pair_parameters(cluster_initial,atomPairs_initial)
 call initialize_basis_functions_on_each_well(phiCov,phiIon)
 pbme%phi(1:nBasisFunCov) = phiCov
 pbme%phi(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = phiIon
-call get_overlap_matrix(pbme%phi,SMatrix)
+call get_overlap_matrix(pbme%phi,pbme%SMatrix)
 call get_double_derivative_basis_functions_on_each_well(d2pCov,d2pIon)
 d2p(1:nBasisFunCov) = d2pCov
 d2p(nBasisFunCov+1:nBasisFunCov+nBasisFunIon) = d2pIon
@@ -126,11 +132,52 @@ call get_phi_KineticEnergy_phi_matrix(pbme%phi,d2p,pbme%phiKphi)
 call get_phi_Vsubsystem_phi_matrix(pbme%phi,atomPairs_initial(1,2)%rij,pbme%phiVsphi)
 
 HMatrix = pbme%phiKphi + pbme%phiVsphi
-call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
+!call get_subsystem_lambdas(HMatrix,SMatrix,pbme%lambda,pbme%eigenvalues)
+!do i = 1, nBasisFun
+!   print '(14f12.4)', SMatrix(1:nBasisFun,i)
+!end do
+call get_subsystem_lambdas(HMatrix,pbme%SMatrix,allEigenVec,allEigenVal)
+
+open (newunit=unit1,file='lambdas.log')
+do i = 1, nPointsGrid
+   do j = 1, nBasisFun
+      lambdaVal(j) = sum(allEigenVec(1:nBasisFun,j)*pbme%phi(1:nBasisFun)%gridPointValue(i))
+   end do
+   write(unit1,'(i3,24f16.4)') i, (lambdaVal(j),j=1,nBasisFun)
+end do
+close (unit1)
+
+if (nMapStates > 2) then
+   pbme%eigenvalues(1:nMapStates) = allEigenVal(1:nMapStates)
+   pbme%lambda(1:nBasisFun,1:nMapStates) = allEigenVec(1:nBasisFun,1:nMapStates)
+else if (nMapStates == 2) then
+   pbme%eigenvalues(1) = allEigenVal(1)
+   pbme%eigenvalues(2) = allEigenVal(3)
+   pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
+   pbme%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
+else if (nMapStates == 1) then
+   if (md%singleMap == 1) then
+      pbme%eigenvalues(1) = allEigenVal(1)
+      pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
+   else
+      pbme%eigenvalues(1) = allEigenVal(3)
+      pbme%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,3)
+   end if
+else
+   stop 'error in number of quantum states classically mapped (check nMapStates)'
+end if
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(pbme)
    !previous subroutine called only once, no need to update
+!print '(12f12.4)', pbme%pqAp
+!print *, '-'
+!print '(12f12.4)', pbme%pqBp
+!do i = 1, nBasisFun
+!   print *, i, allEigenVal(i)
+!   print '(24f12.4)', allEigenVec(1:nBasisFun,i)
+!end do
+
 call get_phi_inv_r_HS_phi_matrix(pbme)
 !h matrix
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,pbme)
@@ -152,17 +199,21 @@ call get_phi_rc_inv_r3_HS_phi_matrix(atomPairs_initial(1,2)%rij,pbme)
 !print '(12f9.4)', pbme%lambda(1:12,1)
 !print *, 'l2'
 !print '(12f9.4)', pbme%lambda(1:12,2)
-
+!stop
 !pbme%rm = 0.0d0
 !pbme%pm = 0.0d0
-!pbme%rm(2) = 0.1205d0
-!pbme%pm(2) = 0.1244d0
+!pbme%rm(2) = 0.16d0
+!pbme%pm(2) = 0.16d0
 call do_mapping_variables_sampling(stream,pbme)
+!pbme%rm = 0.0d0
+!pbme%pm = 0.0d0
+!pbme%rm(3) = 0.16d0
+!pbme%pm(3) = 0.16d0
 call get_mapFactor(pbme)
 !forces
 call get_all_forces_pbme(cluster_initial,atomPairs_initial,pbme,force_initial,forceCCoM_initial)
 
-!call get_phi_q_phi_matrix(phi,gridHSolvent,pqp)
+call get_phi_rAH_phi_matrix(pbme)
 !call get_lambda_q_lambda_matrix(lambda,pqp,lql)
 !print *, 'qm',get_map_contribution(lql,mapFactor)
 
@@ -178,12 +229,15 @@ do i = 1, md%nTrajectories
    print *, 'Trajectory',i,' start'
    
    print *, 'equilibration start'
-   !call run_thermal_equilibration(cluster,atomPairs,force,md,stream,i)
-   call run_thermal_equilibration_pbme_only_11(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   if (md%confinement == 1) then
+      call run_thermal_equilibration_pbme_confined_cluster(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   else
+      call run_thermal_equilibration_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,stream,i)
+   end if
    print *, 'equilibration end'
    
    !print *, 'production start'
-   !call run_nve_dynamics(cluster,atomPairs,force,md,i)
+   !call run_nve_pbme(cluster,atomPairs,pbme,force,forceCCoM,md,i)
    !print *, 'production end'
    
    print *, 'Trajectory',i,' end'

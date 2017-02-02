@@ -10,7 +10,9 @@ integer,parameter :: nPointsGrid = 40
 real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.4d0
 real(8),parameter :: binWidth = (upperLimit-lowerLimit)/nPointsGrid
 real(8),parameter :: covMinWell = 1.0d0, ionMinWell = 1.6d0
-real(8),parameter :: alpha = 7.735d0
+real(8),parameter :: alpha0 = 7.735d0
+real(8),parameter :: alphaCov = 9.26d0
+real(8),parameter :: alphaIon = 11.42d0
 !-->
 
 integer,parameter :: brng = VSL_BRNG_MT2203
@@ -63,7 +65,7 @@ type Forces
 end type Forces
 
 type MdData
-   integer :: seed, eqSteps, nTrajectories
+   integer :: seed, eqSteps, nTrajectories, confinement
    integer :: stepFreqEqSave, stepFreqOutTrajectory
    integer :: stepFreqOutLog
    integer :: maxEqTries, eqPhases, eqPhaseSteps
@@ -71,6 +73,7 @@ type MdData
    integer :: stepFreqCoMRemoval
    integer :: prodSteps
    integer :: nBondConstraints
+   integer :: singleMap, updateLambdasOntheFly
    real(8) :: timeStep, halfTimeStep
    real(8) :: initialEqTempInK, targetTempInK
 end type MdData
@@ -98,8 +101,8 @@ end type VectorForMatrix
 type QuantumStateData
    real(8) :: hTraceN
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
-   real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi
-   real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp
+   real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi, SMatrix
+   real(8),dimension(:,:),allocatable :: pqAp,pqBp,pAHp,pBHp,prAHp
    real(8),dimension(:,:),allocatable :: lambda,mapFactor
    real(8),dimension(:,:),allocatable :: h,vas,vbs,vhs, hs
    type(BasisFunction),dimension(:),allocatable :: phi

@@ -43,7 +43,7 @@ implicit none
       do j = 1, 12
          counter = counter + 1
          if (counter == nmol) exit
-         cen(j+(i*12-12),1:3) = v(j,1:3)*5.3d0*i
+         cen(j+(i*12-12),1:3) = v(j,1:3)*7.5d0*i
       end do
    end do
    

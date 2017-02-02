@@ -13,9 +13,9 @@ implicit none
 
    open(newunit=unit1,file='md.in')
       read(unit1,*)
-      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates
+      read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, md%singleMap
       read(unit1,*)
-      read(unit1,*) md%seed, md%nTrajectories
+      read(unit1,*) md%seed, md%nTrajectories, md%confinement
       read(unit1,*)
       read(unit1,*) md%timeStep
       read(unit1,*)
@@ -28,6 +28,8 @@ implicit none
       read(unit1,*) md%stepFreqVelRescale,md%stepFreqCoMRemoval
       read(unit1,*)
       read(unit1,*) md%stepFreqOutTrajectory, md%stepFreqOutLog
+      read(unit1,*)
+      read(unit1,*) md%updateLambdasOntheFly
    close(unit1)
    
    md%halfTimeStep = md%timeStep/2d0

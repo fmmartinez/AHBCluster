@@ -65,7 +65,7 @@ implicit none
    
    do i = 1, n
       do j = 1, n
-         K(i,j) = -0.0479d0*integrate_trapezoid_rule(d2p(i),valueOfOne,phi(j))
+         K(i,j) = -0.0479d0*integrate_trapezoid_rule(phi(i),valueOfOne,d2p(j))
       end do
    end do
 end subroutine get_phi_KineticEnergy_phi_matrix
@@ -96,27 +96,25 @@ implicit none
 
 end subroutine get_phi_Vsubsystem_phi_matrix
 
-subroutine get_phi_q_phi_matrix(phi,HSData,H)
+subroutine get_phi_rAH_phi_matrix(p)
 implicit none
-   type(EvalOnGridHData),dimension(:),intent(in) :: HSData
-   real(8),dimension(:,:),intent(inout) :: H
-   type(BasisFunction),dimension(:),intent(in) :: phi
+   type(QuantumStateData),intent(inout) :: p
    
    integer :: i,j,k,n
    type(EvalOnGridFunction) :: rHS
    
-   n = size(phi)
+   n = size(p%phi)
 
    do i = 1, nPointsGrid+1
-      rHS%gridPointValue(i) = HSData(1)%gridPoint(i)%rij
+      rHS%gridPointValue(i) = p%gridHSolvent(1)%gridPoint(i)%rij
    end do
    
    do i = 1, n
       do j = 1, n
-         H(i,j) = integrate_trapezoid_rule(phi(i),rHS,phi(j))
+         p%prAHp(i,j) = integrate_trapezoid_rule(p%phi(i),rHS,p%phi(j))
       end do
    end do
-end subroutine get_phi_q_phi_matrix
+end subroutine get_phi_rAH_phi_matrix
 
 !---various matrix elements used through energy and force calculations
 subroutine get_phi_charge_AB_phi_matrix(p)
@@ -286,7 +284,7 @@ implicit none
 
    do k = 1, nAtoms
       do i = 1, nPointsGrid+1
-         rch = p%gridHSolvent(1)%gridPoint(i)%rij - rab*(0.3882d0)
+         rch = rab*(0.3882d0) - p%gridHSolvent(1)%gridPoint(i)%rij
          rsh = p%gridHSolvent(k)%gridPoint(i)%rij
          inverse3%gridPointValue(i) = rch/(rsh**3)
       end do
@@ -311,7 +309,6 @@ implicit none
    m = size(p%eigenvalues)
    
    p%h = 0d0   
-   call get_phi_Vsubsystem_phi_matrix(p%phi,pair(1,2)%rij,p%phiVsphi)
    call get_lambda_hs_lambda_matrix(p)
    !do i = 1, m
    !   p%h(i,i) = p%eigenvalues(i)
@@ -747,7 +744,7 @@ implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
    
    integer :: i,j,nbc,nbi
-   real(8) :: q
+   real(8) :: q,alpha
    
    nbc = size(cov)
    nbi = size(ion)
@@ -757,10 +754,12 @@ implicit none
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state
       do j = 1, nbc
-         cov(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-covMinWell)
+         alpha = alphaCov
+         cov(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-covMinWell,alpha)
       end do
       do j = 1, nbi
-         ion(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-ionMinWell)
+         alpha = alphaIon
+         ion(j)%gridPointValue(i) = eval_d2_harmonic_oscillator_wavefunction(j-1,q-ionMinWell,alpha)
       end do
    end do
 end subroutine get_double_derivative_basis_functions_on_each_well
@@ -770,7 +769,7 @@ implicit none
    type(BasisFunction),dimension(:),intent(inout) :: cov,ion
    
    integer :: i,j,nbc,nbi
-   real(8) :: q
+   real(8) :: q,alpha
    
    nbc = size(cov)
    nbi = size(ion)
@@ -780,19 +779,21 @@ implicit none
       !j enters calculation as j-1, because the first index (j=1) corresponds to 0, 
       !which by definition is ground state
       do j = 1, nbc
-         cov(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-covMinWell)
+         alpha = alphaCov
+         cov(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-covMinWell,alpha)
       end do
       do j = 1, nbi
-         ion(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-ionMinWell)
+         alpha = alphaIon
+         ion(j)%gridPointValue(i) = eval_harmonic_oscillator_wavefunction(j-1,q-ionMinWell,alpha)
       end do
    end do
 end subroutine initialize_basis_functions_on_each_well
 
 !---elementary calculations
-function eval_harmonic_oscillator_wavefunction(i,dx) result(phi)
+function eval_harmonic_oscillator_wavefunction(i,dx,alpha) result(phi)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
 
    real(8) :: phi
    real(8) :: hermite,factorial,exponent1
@@ -805,15 +806,15 @@ implicit none
 
 end function eval_harmonic_oscillator_wavefunction
 
-function eval_d2_harmonic_oscillator_wavefunction(i,dx) result(d2p)
+function eval_d2_harmonic_oscillator_wavefunction(i,dx,alpha) result(d2p)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
 
    real(8) :: d2p,a,f,g,df,dg,d2f,d2g,factorial
 
-   call eval_derivatives_gaussian_function(dx,g,dg,d2g)
-   call eval_derivativez_hermite_polynomial(i,alpha*dx,f,df,d2f)
+   call eval_derivatives_gaussian_function(alpha,dx,g,dg,d2g)
+   call eval_derivativez_hermite_polynomial(i,alpha,alpha*dx,f,df,d2f)
    factorial = eval_factorial(i)
 
    a = sqrt(alpha/(2d0**i*factorial*pisqrt))
@@ -821,10 +822,10 @@ implicit none
 
 end function eval_d2_harmonic_oscillator_wavefunction
 
-subroutine eval_derivatives_gaussian_function(dx,d0,d1,d2)
+subroutine eval_derivatives_gaussian_function(alpha,dx,d0,d1,d2)
 !the form of the gaussian is exp(-dx^2*c^2/2)
 implicit none
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
    real(8),intent(out) :: d0,d1,d2
    
    d0 = exp(-0.5d0*alpha**2*dx**2)
@@ -835,10 +836,10 @@ implicit none
 
 end subroutine eval_derivatives_gaussian_function
 
-subroutine eval_derivativez_hermite_polynomial(i,dx,d0,d1,d2)
+subroutine eval_derivativez_hermite_polynomial(i,alpha,dx,d0,d1,d2)
 implicit none
    integer,intent(in) :: i
-   real(8),intent(in) :: dx
+   real(8),intent(in) :: dx,alpha
    real(8),intent(out) :: d0,d1,d2
 
    d0 = eval_hermite_polynomial(i,dx)
@@ -919,8 +920,9 @@ implicit none
    Stemp = S
    call dsygv(1,'V','U',n,Htemp,n,Stemp,n,w,work,lwork,info_1)
    
-   e(1:m) = w(1:m)
-   l(1:n,1:m) = Htemp(1:n,1:m)
+   e = w
+   
+   l = Htemp
    
    deallocate(Stemp)
    deallocate(Htemp)

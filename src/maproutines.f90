@@ -75,4 +75,34 @@ implicit none
    traceN = traceN/real(n)
 end subroutine make_matrix_traceless
 
+function get_apparent_rAH(pbme) result(aqA)
+use quantumcalculations
+implicit none
+   type(QuantumStateData),intent(in) :: pbme
+   
+   integer :: i,j,nb,nm
+   real(8) :: aqA, trace
+   real(8),dimension(:),allocatable :: li,lj
+   real(8),dimension(:,:),allocatable :: q,qt
+   
+   nb = size(pbme%lambda,1)
+   nm = size(pbme%rm)
+   
+   allocate(li(1:nb))
+   allocate(lj(1:nb))
+   allocate(q(1:nm,1:nm))
+   allocate(qt(1:nm,1:nm))
+   
+   do i = 1, nm
+      do j = 1, nm
+         li = pbme%lambda(1:nb,i)
+         lj = pbme%lambda(1:nb,j)
+         q(i,j) = get_lambda_f_lambda_matrix_element(li,lj,pbme%prAHp)
+      end do
+   end do
+
+   call make_matrix_traceless(q,trace,qt)
+   aqA = get_map_contribution(qt,pbme%mapFactor) + trace
+end function get_apparent_rAH
+
 end module maproutines
