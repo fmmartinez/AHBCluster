@@ -285,12 +285,12 @@ implicit none
       call make_matrix_traceless(dh1,traceN1,dht1)
       
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = &
+      forceVecHAtomTemp(j)%vecij = ( &
       (0.5d0*(get_map_contribution(-dht,p%mapFactor1)+get_map_contribution(-dht,p%mapFactor2))-traceN)*&
-      (at(j)%pos-com) + &
+      pairs(1,j)%vectorij ) - ( &
       (0.5d0*(get_map_contribution(-dht1,p%mapFactor1)+get_map_contribution(-dht1,p%mapFactor2))-traceN1)*&
-      pairs(1,2)%vectorij/pairs(1,2)%rij
-      
+      pairs(1,2)%vectorij/pairs(1,2)%rij )
+     
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
    end do
@@ -310,7 +310,26 @@ implicit none
    end do
    
    !add all forces due to interactions between atoms A, B and Solvent
-   do i = 1, n
+   do i = 1, 2
+      if (i == 1) then
+         j = 2
+         force%inAtom(i)%total = force%inAtom(i)%total + &
+            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
+      end if
+
+      if (i == 2) then
+         j = 1
+         force%inAtom(i)%total = force%inAtom(i)%total + &
+            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
+      end if
+
+      do j = 3, n
+         forceAtComplexCoM = forceAtComplexCoM + &
+            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
+      end do
+   end do
+
+   do i = 3, n
       do j = 1, i-1
          force%inAtom(i)%total = force%inAtom(i)%total + &
                                  force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
