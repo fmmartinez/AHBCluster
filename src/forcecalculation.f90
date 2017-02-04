@@ -252,7 +252,7 @@ implicit none
    forceHAtomTemp(2) = 0.5d0*(get_map_contribution(-dht,p%mapFactor1) +&
                               get_map_contribution(-dht,p%mapFactor2)) - traceN
    
-   forceAtComplexCoM = forceAtComplexCoM + (forceHAtomTemp(2)*pairs(2,1)%vectorij)/pairs(2,1)%rij
+   forceAtComplexCoM = forceAtComplexCoM + forceHAtomTemp(2)*pairs(2,1)%vectorij/pairs(2,1)%rij
    
    !AB vs S
    do j = 3, n
@@ -262,7 +262,7 @@ implicit none
       call get_lambda_d_VASol_lambda_matrix(at(j),pairs(i,j),p,dh)
       call make_matrix_traceless(dh,traceN,dht)
       force%atomPair(i,j) = force%atomPair(i,j) + 0.5d0*(get_map_contribution(-dht,p%mapFactor1) +&
-                                                   get_map_contribution(-dht,p%mapFactor2))- traceN
+                                                   get_map_contribution(-dht,p%mapFactor2)) - traceN
       
       force%atomPair(j,i) = force%atomPair(i,j)
       
@@ -310,26 +310,7 @@ implicit none
    end do
    
    !add all forces due to interactions between atoms A, B and Solvent
-   do i = 1, 2
-      if (i == 1) then
-         j = 2
-         force%inAtom(i)%total = force%inAtom(i)%total + &
-            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
-      end if
-
-      if (i == 2) then
-         j = 1
-         force%inAtom(i)%total = force%inAtom(i)%total + &
-            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
-      end if
-
-      do j = 3, n
-         forceAtComplexCoM = forceAtComplexCoM + &
-            force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
-      end do
-   end do
-
-   do i = 3, n
+   do i = 1, n
       do j = 1, i-1
          force%inAtom(i)%total = force%inAtom(i)%total + &
                                  force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
@@ -339,16 +320,19 @@ implicit none
                                  force%atomPair(i,j)*pairs(j,i)%vectorij/pairs(j,i)%rij
       end do
    end do
-
+   
    !add forces due to interactions of A/B/Solvent with H wavefunction
    !A vs H, unitary vector along A--B used
    force%inAtom(1)%total = force%inAtom(1)%total + &
+      !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(2,1)%vectorij/pairs(2,1)%rij + &
       forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij + &
-      forceAtComplexCoM*at(1)%mass**2/(at(1)%mass**2 - at(2)%mass**2)
+      forceAtComplexCoM/(1d0-at(1)%mass/at(2)%mass)
    !B vs H, unitary vector along B--A used
    force%inAtom(2)%total = force%inAtom(2)%total + &
-      forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(1,2)%rij + &
-      forceAtComplexCoM*(-1d0*at(2)%mass**2)/(at(1)%mass**2 - at(2)%mass**2)
+      !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(1,2)%vectorij/pairs(1,2)%rij + &
+      !forceAtComplexCoM*at(2)%mass**2/(at(1)%mass**2 - at(2)%mass**2)
+      forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(2,1)%rij + &
+      forceAtComplexCoM/(1d0-at(2)%mass/at(1)%mass)
    !S vs H
    do i = 3, n
       force%inAtom(i)%total = force%inAtom(i)%total + forceVecHAtomTemp(i)%vecij
