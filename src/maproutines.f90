@@ -19,6 +19,25 @@ implicit none
 
 end subroutine do_mapping_variables_sampling
 
+subroutine do_coherent_state_variables_sampling(stream,p)
+use mkl_vsl_type
+use mkl_vsl
+implicit none
+   type(vsl_stream_state),intent(in) :: stream
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: nMap,errcode
+   
+   nMap = size(p%rm)
+
+   errcode = vdrnggaussian(method,stream,nMap,p%p1,0d0,hbar)
+   errcode = vdrnggaussian(method,stream,nMap,p%q2,0d0,hbar)
+   
+   errcode = vdrnggaussian(method,stream,nMap,p%p2,0d0,hbar)
+   errcode = vdrnggaussian(method,stream,nMap,p%q2,0d0,hbar)
+
+end subroutine do_coherent_state_variables_sampling
+
 function get_map_contribution(mat,mapFactor) result(y)
 implicit none
    real(8),dimension(:,:),intent(in) :: mapFactor,mat
@@ -51,6 +70,24 @@ implicit none
    end do
 
 end subroutine get_mapFactor
+
+subroutine get_covarFactor(fbts)
+implicit none
+   type(QuantumStateData),intent(inout) :: fbts
+   integer :: i,j,nm
+
+   nm = size(fbts%q1)
+
+   fbts%mapFactor1 = 0d0
+   fbts%mapFactor2 = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         fbts%mapFactor1(i,j) = 0.5d0*(fbts%q1(i)*fbts%q1(j) + fbts%p1(i)*fbts%p1(j))/hbar
+         fbts%mapFactor2(i,j) = 0.5d0*(fbts%q2(i)*fbts%q2(j) + fbts%p2(i)*fbts%p2(j))/hbar
+      end do
+   end do
+
+end subroutine get_covarFactor
 
 subroutine make_matrix_traceless(matrix,traceN,tracelessmatrix)
 implicit none

@@ -1,3 +1,5 @@
+method(1=pbme,2=fbts)
+2
 nAtoms nBasisFunCov nBasisFunIon nMapStates ifOneState(1=Cov,2=Ion)
 26     6            6            3          1	
 seed nTrajectories confinement(1=yes,0=no)

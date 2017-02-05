@@ -13,6 +13,8 @@ implicit none
 
    open(newunit=unit1,file='md.in')
       read(unit1,*)
+      read(unit1,*) md%appMethod
+      read(unit1,*)
       read(unit1,*) n, nBasisFunCov, nBasisFunIon, nMapStates, md%singleMap
       read(unit1,*)
       read(unit1,*) md%seed, md%nTrajectories, md%confinement
