@@ -432,7 +432,6 @@ implicit none
 
    if (try > md%maxEqTries) then
       print *, 'stopped equilibration after', try,' tries'
-      stop
    end if
 
    close(unit3)
