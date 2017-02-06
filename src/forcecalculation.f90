@@ -326,13 +326,13 @@ implicit none
    force%inAtom(1)%total = force%inAtom(1)%total + &
       !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(2,1)%vectorij/pairs(2,1)%rij + &
       forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij + &
-      forceAtComplexCoM/(1d0-at(1)%mass/at(2)%mass)
+      forceAtComplexCoM*at(1)%mass/(at(1)%mass+at(2)%mass)
    !B vs H, unitary vector along B--A used
    force%inAtom(2)%total = force%inAtom(2)%total + &
       !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(1,2)%vectorij/pairs(1,2)%rij + &
       !forceAtComplexCoM*at(2)%mass**2/(at(1)%mass**2 - at(2)%mass**2)
       forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(2,1)%rij + &
-      forceAtComplexCoM/(1d0-at(2)%mass/at(1)%mass)
+      forceAtComplexCoM*at(2)%mass/(at(1)%mass+at(2)%mass)
    !S vs H
    do i = 3, n
       force%inAtom(i)%total = force%inAtom(i)%total + forceVecHAtomTemp(i)%vecij
