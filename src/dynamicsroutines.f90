@@ -757,7 +757,7 @@ implicit none
 
       if (mod(i,md%stepFreqOutLog) == 0) then
          if (atomPairs(1,2)%rij /= atomPairs(1,2)%rij) stop 'NaN found'      
-         call get_total_potential_energy_pbme(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         call get_total_potential_energy_fbts(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
          totalKinEnergy = get_kinetic_energy(cluster)
          totalEnergy = totalKinEnergy + totalPotEnergy
          
