@@ -230,9 +230,11 @@ do i = 1, md%nTrajectories
    end if
    print *, 'equilibration end'
    
-   !print *, 'production start'
-   !call run_nve_pbme(cluster,atomPairs,quantum,force,forceCCoM,md,i)
-   !print *, 'production end'
+   print *, 'production start'
+   if (md%appMethod == 1) then
+      call run_nve_pbme(cluster,atomPairs,quantum,force,forceCCoM,md,i)
+   end if
+   print *, 'production end'
    
    print *, 'Trajectory',i,' end'
    print *, ' '
