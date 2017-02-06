@@ -144,8 +144,9 @@ implicit none
       call make_matrix_traceless(dh1,traceN1,dht1)
       
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(at(j)%pos-com) &
-         + (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
+      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*&
+         pairs(1,j)%vectorij - &
+         (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
       
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
