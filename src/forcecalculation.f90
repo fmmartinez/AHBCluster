@@ -144,8 +144,9 @@ implicit none
       call make_matrix_traceless(dh1,traceN1,dht1)
       
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*(at(j)%pos-com) &
-         + (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
+      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*&
+         pairs(1,j)%vectorij - &
+         (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
       
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
@@ -326,13 +327,13 @@ implicit none
    force%inAtom(1)%total = force%inAtom(1)%total + &
       !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(2,1)%vectorij/pairs(2,1)%rij + &
       forceHAtomTemp(1)*pairs(2,1)%vectorij/pairs(2,1)%rij + &
-      forceAtComplexCoM/(1d0-at(1)%mass/at(2)%mass)
+      forceAtComplexCoM*at(1)%mass/(at(1)%mass+at(2)%mass)
    !B vs H, unitary vector along B--A used
    force%inAtom(2)%total = force%inAtom(2)%total + &
       !(forceHAtomTemp(1)+forceHAtomTemp(2))*pairs(1,2)%vectorij/pairs(1,2)%rij + &
       !forceAtComplexCoM*at(2)%mass**2/(at(1)%mass**2 - at(2)%mass**2)
       forceHAtomTemp(2)*pairs(1,2)%vectorij/pairs(2,1)%rij + &
-      forceAtComplexCoM/(1d0-at(2)%mass/at(1)%mass)
+      forceAtComplexCoM*at(2)%mass/(at(1)%mass+at(2)%mass)
    !S vs H
    do i = 3, n
       force%inAtom(i)%total = force%inAtom(i)%total + forceVecHAtomTemp(i)%vecij

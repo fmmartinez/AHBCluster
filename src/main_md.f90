@@ -233,6 +233,8 @@ do i = 1, md%nTrajectories
    print *, 'production start'
    if (md%appMethod == 1) then
       call run_nve_pbme(cluster,atomPairs,quantum,force,forceCCoM,md,i)
+   else
+      call run_nve_fbts(cluster,atomPairs,quantum,force,forceCCoM,md,i)
    end if
    print *, 'production end'
    

@@ -713,6 +713,84 @@ end subroutine velocity_verlet_int_one_timestep_pbme_confined_cluster
 
 !---fbts stuff
 
+subroutine run_nve_fbts(cluster,atomPairs,p,force,forceCCoM,md,trj)
+use ioroutines
+use stateevaluation
+use energycalculation
+use maproutines
+implicit none
+   integer,intent(in) :: trj
+   real(8),dimension(1:3),intent(inout) :: forceCCoM
+   type(Atom),dimension(:),intent(inout) :: cluster
+   type(Forces),intent(inout) :: force
+   type(AtomPairData),dimension(:,:),intent(inout) :: atomPairs
+   type(MdData),intent(in) :: md
+   type(QuantumStateData),intent(inout) :: p
+   
+   character(17) :: outLogFile1, outLogFile2, trjxyzFile1
+   integer :: i,j,try,nAtoms,nMapStates,unit1,unit2,unit3
+   real(8) :: tempInK, maxDistAS, clusterRadius
+   real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
+   real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
+   real(8) :: solPol, instaTempInK
+   
+   nAtoms = size(cluster)
+   nMapStates = size(p%p1)
+
+   clusterRadius = (nAtoms/(0.012d0))**(1d0/3d0)
+   
+   write(outLogFile1,'(a9,i4.4,a4)') 'outputPd1',trj,'.log'
+   write(outLogFile2,'(a9,i4.4,a4)') 'outputPd2',trj,'.log'
+   write(trjxyzFile1,'(a9,i4.4,a4)') 'xtrajProd',trj,'.xyz'
+   open(newunit=unit1,file=outLogFile1)
+   open(newunit=unit2,file=outLogFile2)
+   open(newunit=unit3,file=trjxyzFile1)
+   
+   do i = 1, md%prodSteps
+      if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
+      
+      call velocity_verlet_int_one_timestep_fbts(cluster,atomPairs,p,force,forceCCoM,md)
+
+      if (mod(i,md%stepFreqOutTrajectory) == 0) then
+         call write_xyz_trajectory(cluster,i,unit3)
+      end if
+
+      if (mod(i,md%stepFreqOutLog) == 0) then
+         if (atomPairs(1,2)%rij /= atomPairs(1,2)%rij) stop 'NaN found'      
+         call get_total_potential_energy_fbts(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
+         totalKinEnergy = get_kinetic_energy(cluster)
+         totalEnergy = totalKinEnergy + totalPotEnergy
+         
+         instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
+         dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
+         totalp = get_total_momentum_magnitude(cluster)
+         solPol = get_solvent_polarization(cluster,atomPairs)
+         write(unit1,'(i10,24f12.6)') i, atomPairs(1,2)%rij, solpol,&
+            dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
+            totalEnergy, totalp, instaTempInK
+         write(unit2,'(i10,24f12.6)') i, (p%h(j,j),j=1,nMapStates)
+         !write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p),(p%h(j,j),j=1,nMapStates),&
+         !   ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
+      end if
+      
+      if (maxval(atomPairs(1,1:nAtoms)%rij) > 2d0*clusterRadius) then
+         print *, 'production finished at', i,'step due to evaporation',&
+                  maxval(atomPairs(1,1:nAtoms)%rij)
+         exit
+      end if
+   end do
+
+   if (i >= md%prodSteps) then
+      print *, 'finished successful production run', i
+   else
+      print *, 'production run finished early', i
+   end if
+
+   close(unit3)
+   close(unit2)
+   close(unit1)
+end subroutine run_nve_fbts
+
 subroutine run_thermal_equilibration_fbts(cluster,atomPairs,p,force,forceCCoM,md,stream,trj)
 use ioroutines
 use stateevaluation
