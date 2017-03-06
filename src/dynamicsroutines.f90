@@ -238,11 +238,11 @@ implicit none
    type(QuantumStateData),intent(inout) :: p
    
    character(17) :: outLogFile1, outLogFile2, trjxyzFile1
-   integer :: i,j,try,nAtoms,nMapStates,unit1,unit2,unit3
+   integer :: i,j,k,try,nAtoms,nMapStates,unit1,unit2,unit3
    real(8) :: tempInK, maxDistAS, clusterRadius
    real(8) :: dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess
    real(8) :: totalPotEnergy,totalKinEnergy,totalEnergy, totalp
-   real(8) :: solPol, instaTempInK
+   real(8) :: solPol, instaTempInK, initialDensity, mappingVarsState
    
    nAtoms = size(cluster)
    nMapStates = size(p%rm)
@@ -255,6 +255,8 @@ implicit none
    open(newunit=unit1,file=outLogFile1)
    open(newunit=unit2,file=outLogFile2)
    open(newunit=unit3,file=trjxyzFile1)
+
+   initialDensity = (p%rm(1)**2 + p%pm(1)**2 - hbar/2d0)/hbar**2d0
    
    do i = 1, md%prodSteps
       if (mod(i,md%stepFreqCoMremoval) == 0 ) call remove_CoM_movement(cluster)
@@ -270,6 +272,16 @@ implicit none
          call get_total_potential_energy_pbme(atomPairs,p,ec,ecslj,ecsel,ecs,esslj,essel,essb,ess,totalPotEnergy)
          totalKinEnergy = get_kinetic_energy(cluster)
          totalEnergy = totalKinEnergy + totalPotEnergy
+
+         mappingVarsState = 0d0
+         do k = 1, nMapStates
+            do j = 1, nMapStates
+               mappingVarsState = mappingVarsState + p%rm(k)*p%rm(j)
+               mappingVarsState = mappingVarsState + p%pm(k)*p%pm(j)
+               if (k == j) mappingVarsState = mappingVarsState - hbar
+            end do
+         end do
+         mappingVarsState = mappingVarsState*initialDensity
          
          instaTempInK = get_insta_temperature(totalKinEnergy,nAtoms,md%nBondConstraints)
          dcscoms = get_distance_solvent_CoM_complex_CoM(cluster)
@@ -277,7 +289,7 @@ implicit none
          solPol = get_solvent_polarization(cluster,atomPairs)
          write(unit1,'(i10,24f12.6)') i, atomPairs(1,2)%rij, solpol,&
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
-            totalEnergy, totalp, instaTempInK
+            totalEnergy, totalp, instaTempInK, mappingVarsState
          write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p),(p%h(j,j),j=1,nMapStates),&
             ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
       end if
