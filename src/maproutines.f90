@@ -14,8 +14,8 @@ implicit none
    
    nMap = size(p%rm)
 
-   errcode = vdrnggaussian(method,stream,nMap,p%rm,0d0,sqrt(hbar/2d0))
-   errcode = vdrnggaussian(method,stream,nMap,p%pm,0d0,sqrt(hbar/2d0))
+   errcode = vdrnggaussian(method,stream,nMap,p%rm,0d0,hbar)!sqrt(hbar/2d0))
+   errcode = vdrnggaussian(method,stream,nMap,p%pm,0d0,hbar)!sqrt(hbar/2d0))
 
 end subroutine do_mapping_variables_sampling
 
