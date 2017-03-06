@@ -152,15 +152,10 @@ else if (nMapStates == 2) then
    quantum%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
    quantum%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
 else if (nMapStates == 1) then
-   if (md%singleMap == 1) then
-      quantum%eigenvalues(1) = allEigenVal(1)
-      quantum%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
-   else
-      quantum%eigenvalues(1) = allEigenVal(3)
-      quantum%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,3)
-   end if
-else
-   stop 'error in number of quantum states classically mapped (check nMapStates)'
+   quantum%eigenvalues(1) = allEigenVal(md%singleMap)
+   quantum%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,md%singleMap)
+   if ((md%singleMap > nBasisFun) .or. (md%singleMap <= 0)) &
+      stop 'error, selected state not in range of  nMapStates'
 end if
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
