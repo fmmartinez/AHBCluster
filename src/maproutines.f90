@@ -105,8 +105,12 @@ implicit none
 
    y = 0d0
    do i = 1, nm
-      do j = 1, nm
-         y = y + mat(i,j)*mapFactor(i,j)
+      y = y + mat(i,i)*mapFactor(i,i)
+   end do
+
+   do i = 1, nm-1
+      do j = i+1, nm
+         y = y + mat(i,j)*mapFactor(i,j)*2d0
       end do
    end do
 end function get_map_contribution
