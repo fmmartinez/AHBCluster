@@ -8,13 +8,15 @@ use stateevaluation
 use forcecalculation
 use quantumcalculations
 use maproutines
+use energycalculation
 implicit none
 
-integer :: i,j,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
+integer :: i,j,k,l,nAtoms,errcode,nBasisFunCov,nBasisFunIon,nBasisFun
 integer :: nMapStates,unit1
 
+real(8) :: lambdaValJ, lambdaValK, vah
 real(8),dimension(1:3) :: forceCCoM 
-real(8),dimension(:),allocatable :: allEigenVal, lambdaVal
+real(8),dimension(:),allocatable :: allEigenVal, lambdaVal, lhsl
 real(8),dimension(:,:),allocatable :: HMatrix, allEigenVec
 real(8),dimension(:,:),allocatable :: pqp,lql,htemp
 
@@ -60,6 +62,7 @@ allocate(HMatrix(1:nBasisFun,1:nBasisFun))
 allocate(allEigenVec(1:nBasisFun,1:nBasisFun))
 allocate(allEigenVal(1:nBasisFun))
 allocate(lambdaVal(1:nBasisFun))
+allocate(lhsl(1:nBasisFun**2))
 
 allocate(quantum%gridHSolvent(1:nAtoms))
 
@@ -143,6 +146,22 @@ do i = 1, nPointsGrid
 end do
 close (unit1)
 
+open (newunit=unit1,file='hs.log')
+do i = 1, nPointsGrid
+   vah = get_complex_energy_attraction_part(0.1d0+i*binWidth,2.7d0)
+   l = 0
+   do j = 1, nBasisFun
+      do k = 1, nBasisFun
+         l = l + 1
+         lambdaValJ = sum(allEigenVec(1:nBasisFun,j)*quantum%phi(1:nBasisFun)%gridPointValue(i))
+         lambdaValK = sum(allEigenVec(1:nBasisFun,k)*quantum%phi(1:nBasisFun)%gridPointValue(i))
+         lhsl(l) = lambdaValJ*lambdaValK*vah
+      end do
+   end do
+   write(unit1,'(i3,145f16.4)') i, (lhsl(j),j=1,nBasisFun**2), vah
+end do
+close (unit1)
+
 if (nMapStates > 2) then
    quantum%eigenvalues(1:nMapStates) = allEigenVal(1:nMapStates)
    quantum%lambda(1:nBasisFun,1:nMapStates) = allEigenVec(1:nBasisFun,1:nMapStates)
@@ -157,6 +176,12 @@ else if (nMapStates == 1) then
    if ((md%singleMap > nBasisFun) .or. (md%singleMap <= 0)) &
       stop 'error, selected state not in range of  nMapStates'
 end if
+
+!open (newunit=unit1,file='h.log')
+!do i = 1, nPointsGrid
+!   
+!end do
+!close(unit1)
 
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(quantum)
@@ -188,7 +213,7 @@ do i = 1, md%nTrajectories
    call remove_CoM_movement(cluster)
 
    if (md%appMethod == 1) then   
-      call do_mapping_variables_sampling(stream,quantum)
+      call do_mapping_variables_sampling(stream,quantum,md%singleMap)
       call get_mapFactor(quantum)
       quantum%p1 = 0d0
       quantum%q1 = 0d0
