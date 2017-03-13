@@ -133,9 +133,6 @@ implicit none
          pbme%mapFactor(j,i) = pbme%mapFactor(i,j)
       end do
    end do
-   
-   print *, pbme%mapFactor
-   stop
 end subroutine get_mapFactor
 
 subroutine get_mapFactor_traceless(pbme)

@@ -228,7 +228,7 @@ do i = 1, md%nTrajectories
       quantum%pm = 0d0
       quantum%mapFactor = 0d0
    end if
-   
+      
    !forces
    if (md%appMethod == 1) then
       call get_all_forces_pbme(cluster_initial,atomPairs_initial,quantum,force,forceCCoM)
