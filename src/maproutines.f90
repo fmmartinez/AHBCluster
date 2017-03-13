@@ -120,12 +120,32 @@ implicit none
 
    pbme%mapFactor = 0d0
    do i = 1, nm
-      do j = 1, nm
+      pbme%mapFactor(i,i) = 0.5d0*(pbme%rm(i)**2 + pbme%pm(i)**2 - hbar)/hbar
+   end do
+   
+   do i = 1, nm-1
+      do j = i+1, nm
          pbme%mapFactor(i,j) = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
       end do
    end do
 
 end subroutine get_mapFactor
+
+subroutine get_mapFactor_traceless(pbme)
+implicit none
+   type(QuantumStateData),intent(inout) :: pbme
+   integer :: i,j,nm
+
+   nm = size(pbme%rm)
+
+   pbme%mapFactor = 0d0
+   do i = 1, nm
+      do j = 1, nm
+         pbme%mapFactor(i,j) = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
+      end do
+   end do
+
+end subroutine get_mapFactor_traceless
 
 subroutine get_covarFactor(fbts)
 implicit none
