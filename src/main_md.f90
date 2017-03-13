@@ -190,8 +190,8 @@ call get_phi_inv_r_HS_phi_matrix(quantum)
 
 !h matrix
 call get_lambda_h_lambda_matrix(cluster_initial,atomPairs_initial,quantum)
-call make_matrix_traceless(quantum%h,quantum%hTraceN,htemp)
-quantum%h = htemp
+!call make_matrix_traceless(quantum%h,quantum%hTraceN,htemp)
+!quantum%h = htemp
 
 call get_phi_d_VAH_phi_matrix(quantum)
    !previous subroutine called only once, no need to update
