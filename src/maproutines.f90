@@ -218,8 +218,7 @@ implicit none
       end do
    end do
 
-   call make_matrix_traceless(q,trace,qt)
-   aqA = get_map_contribution(qt,pbme%mapFactor) + trace
+   aqA = get_map_contribution(q,pbme%mapFactor)
 end function get_apparent_rAH
 
 end module maproutines
