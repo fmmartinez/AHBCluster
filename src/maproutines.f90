@@ -126,9 +126,12 @@ implicit none
    do i = 1, nm-1
       do j = i+1, nm
          pbme%mapFactor(i,j) = 0.5d0*(pbme%rm(i)*pbme%rm(j) + pbme%pm(i)*pbme%pm(j))/hbar
+         pbme%mapFactor(j,i) = pbme%mapFactor(i,j)
       end do
    end do
-
+   
+   print *, pbme%mapFactor
+   stop
 end subroutine get_mapFactor
 
 subroutine get_mapFactor_traceless(pbme)
