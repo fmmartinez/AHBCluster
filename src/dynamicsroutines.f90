@@ -590,13 +590,8 @@ implicit none
          p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
          p%lambda(1:nBasisFun,2) = allEigenVec(1:nBasisFun,3)
       else if (nMap == 1) then
-         if (mdSpecs%singleMap == 1) then
-            p%eigenvalues(1) = allEigenVal(1)
-            p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,1)
-         else
-            p%eigenvalues(1) = allEigenVal(3)
-            p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,3)
-         end if
+         p%eigenvalues(1) = allEigenVal(mdSpecs%singleMap)
+         p%lambda(1:nBasisFun,1) = allEigenVec(1:nBasisFun,mdSpecs%singleMap)
       else
          stop 'error in number of quantum states classically mapped (check nMapStates)'
       end if
