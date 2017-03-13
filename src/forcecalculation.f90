@@ -104,14 +104,12 @@ implicit none
    force%atomPair(2,1) = force%atomPair(1,2)
       !these are forces due to the proton
    call get_lambda_d_VAH_lambda_matrix(p,dh)
-   call make_matrix_traceless(dh,traceN,dht)
-   forceHAtomTemp(1) = get_map_contribution(-dht,p%mapFactor) - traceN
+   forceHAtomTemp(1) = get_map_contribution(-dh,p%mapFactor)
    
    forceAtComplexCoM = forceHAtomTemp(1)*pairs(1,2)%vectorij/pairs(2,1)%rij
   
    call get_lambda_d_VBH_lambda_matrix(p,dh)
-   call make_matrix_traceless(dh,traceN,dht)
-   forceHAtomTemp(2) = get_map_contribution(-dht,p%mapFactor) - traceN
+   forceHAtomTemp(2) = get_map_contribution(-dh,p%mapFactor)
    
    forceAtComplexCoM = forceAtComplexCoM + (forceHAtomTemp(2)*pairs(2,1)%vectorij)/pairs(2,1)%rij
    
@@ -121,8 +119,7 @@ implicit none
       i = 1
       force%atomPair(i,j) = get_lj_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%rij)
       call get_lambda_d_VASol_lambda_matrix(at(j),pairs(i,j),p,dh)
-      call make_matrix_traceless(dh,traceN,dht)
-      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dht,p%mapFactor) - traceN
+      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dh,p%mapFactor)
       
       force%atomPair(j,i) = force%atomPair(i,j)
       
@@ -130,8 +127,7 @@ implicit none
       i = 2
       force%atomPair(i,j) = get_lj_force(pairs(i,j)%ljEps,pairs(i,j)%ljSig,pairs(i,j)%rij)
       call get_lambda_d_VBSol_lambda_matrix(at(j),pairs(i,j),p,dh)
-      call make_matrix_traceless(dh,traceN,dht)
-      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dht,p%mapFactor) - traceN
+      force%atomPair(i,j) = force%atomPair(i,j) + get_map_contribution(-dh,p%mapFactor)
      
       force%atomPair(j,i) = force%atomPair(i,j)
 
@@ -139,14 +135,11 @@ implicit none
       !calculated as H - CoM - S
       !this is saved in a temporal variable
       call get_lambda_d_VCoMSol_lambda_matrix(j,at(j),p,dh)
-      call make_matrix_traceless(dh,traceN,dht)
       call get_lambda_d_VCoMH_lambda_matrix(j,at(j),p,dh1)
-      call make_matrix_traceless(dh1,traceN1,dht1)
       
       call get_center_of_mass_vector(at(1:2),com)
-      forceVecHAtomTemp(j)%vecij = (get_map_contribution(-dht,p%mapFactor)-traceN)*&
-         pairs(1,j)%vectorij - &
-         (get_map_contribution(-dht1,p%mapFactor)-traceN1)*pairs(1,2)%vectorij/pairs(1,2)%rij
+      forceVecHAtomTemp(j)%vecij = get_map_contribution(-dh,p%mapFactor)*pairs(1,j)%vectorij - &
+         get_map_contribution(-dh1,p%mapFactor)*pairs(1,2)%vectorij/pairs(1,2)%rij
       
       forceHAtomTemp(j) = sqrt(sum(forceVecHAtomTemp(j)%vecij**2))
       forceAtComplexCoM = forceAtComplexCoM + (-forceVecHAtomTemp(j)%vecij)
