@@ -3,7 +3,7 @@ use definitions
 
 contains
 
-subroutine do_mapping_variables_sampling(stream,p)
+subroutine do_mapping_variables_sampling_box_muller(stream,p)
 use mkl_vsl_type
 use mkl_vsl
 implicit none
@@ -16,6 +16,62 @@ implicit none
 
    errcode = vdrnggaussian(method,stream,nMap,p%rm,0d0,hbar)!sqrt(hbar/2d0))
    errcode = vdrnggaussian(method,stream,nMap,p%pm,0d0,hbar)!sqrt(hbar/2d0))
+
+end subroutine do_mapping_variables_sampling_box_muller
+
+subroutine do_mapping_variables_sampling(stream,p,state0)
+use mkl_vsl_type
+use mkl_vsl
+implicit none
+   integer,intent(in) :: state0
+   type(vsl_stream_state),intent(in) :: stream
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: nMap,errcode,i
+   integer,parameter :: method1 = VSL_RNG_METHOD_UNIFORM_STD_ACCURATE
+   real(8) :: limit
+   real(8),dimension(:),allocatable :: angles
+
+   nMap = size(p%rm)
+
+   allocate(angles(1:nMap))
+
+   errcode = vdrnguniform(method1,stream,nMap,angles,0d0,2d0*pi)
+
+   if (nMap == 1) then
+      p%rm(1) = sqrt(3d0*hbar)*cos(angles(1))
+      p%pm(1) = sqrt(3d0*hbar)*sin(angles(1))
+   else
+      do i = 1, nMap
+         if (i == state0) then
+            p%rm(i) = sqrt(3d0*hbar)*cos(angles(i))
+            p%pm(i) = sqrt(3d0*hbar)*sin(angles(i))
+         else
+            p%rm(i) = sqrt(hbar)*cos(angles(i))
+            p%pm(i) = sqrt(hbar)*sin(angles(i))
+         end if
+      end do
+   end if
+
+   
+   !limit = sqrt(hbar)
+
+   !errcode = vdrnguniform(method1,stream,nMap,p%rm,-limit,limit)
+
+   !if (nMap == 1) then
+   !   p%rm(1) = sqrt(3d0)*p%rm(1)
+   !   p%pm(1) = sqrt(3d0*hbar - p%rm(1)**2)
+   !else
+   !   do i = 1, nMap
+   !      if (i == state0) then
+   !         p%rm(i) = sqrt(3d0)*p%rm(i)
+   !         p%pm(i) = sqrt(3d0*hbar - p%rm(i)**2)
+   !      else
+   !         !rm stays same
+   !         p%pm(i) = sqrt(hbar - p%rm(i)**2)
+   !      end if
+   !   end do
+   !end if
 
 end subroutine do_mapping_variables_sampling
 
