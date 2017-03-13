@@ -401,7 +401,7 @@ implicit none
             call do_rattle(cluster,atomPairs,md)
             call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
             !regenerate regenerable stuff from quantum state
-            call do_mapping_variables_sampling(stream,p)
+            call do_mapping_variables_sampling(stream,p,md%singleMap)
             call get_mapFactor(p)
          end if
       end do
@@ -434,7 +434,7 @@ implicit none
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
          write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p), (p%h(j,j),j=1,nMapStates),&
-            ((p%rm(j)**2+p%pm(j)**2)/(2d0*hbar),j=1,nMapStates)
+            ((p%rm(j)**2+p%pm(j)**2-hbar)/(2d0*hbar),j=1,nMapStates)
          !write(999,'(i10,24f12.6)') i, (force%inAtom(j)%total,j=1,nAtoms)
          !write(888,'(i10,24f12.6)') i, (atomPairs(3,j)%rij,j=1,nAtoms)
       end if
