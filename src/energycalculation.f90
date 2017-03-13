@@ -232,6 +232,36 @@ implicit none
    vcatt = 0d0
 
    ec = get_complex_energy_repulsion_part(pairs(1,2)%rij)
+   ec = ec + get_map_contribution(p%hs,p%mapFactor)
+
+   ecslj = get_complexsolvent_lj_energy(pairs)
+   ecsel = get_map_contribution((p%vas+p%vbs+p%vhs),p%mapFactor)
+   ecst = ecslj + ecsel
+
+   call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
+   et = ec + ecst + esst
+end subroutine get_total_potential_energy_pbme
+
+subroutine get_total_potential_energy_pbme_traceless(pairs,p,ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et)
+use maproutines
+implicit none
+   
+   real(8),intent(out) :: ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et
+   type(AtomPairData),dimension(:,:),intent(in) :: pairs
+   type(QuantumStateData),intent(in) :: p
+   
+   integer :: i,nm
+   real(8) :: trace
+   real(8),dimension(:,:),allocatable :: vcsel,vcatt
+
+   nm = size(p%eigenvalues)
+   
+   allocate(vcsel(1:nm,1:nm))
+   allocate(vcatt(1:nm,1:nm))
+   vcsel = 0d0
+   vcatt = 0d0
+
+   ec = get_complex_energy_repulsion_part(pairs(1,2)%rij)
    call make_matrix_traceless(p%hs,trace,vcatt)
    ec = ec + get_map_contribution(vcatt,p%mapFactor) + trace
 
@@ -242,7 +272,7 @@ implicit none
 
    call get_solventsolvent_energy(pairs,esslj,essel,essb,esst)
    et = ec + ecst + esst
-end subroutine get_total_potential_energy_pbme
+end subroutine get_total_potential_energy_pbme_traceless
 
 subroutine get_total_potential_energy_fbts(pairs,p,ec,ecslj,ecsel,ecst,esslj,essel,essb,esst,et)
 use maproutines
