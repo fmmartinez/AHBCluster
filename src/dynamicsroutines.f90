@@ -413,7 +413,7 @@ implicit none
          call do_rattle(cluster,atomPairs,md)
          call do_velocity_rescale(cluster,tempInK,md%nBondConstraints)
       end if
-
+      
       call velocity_verlet_int_one_timestep_pbme(cluster,atomPairs,p,force,forceCCoM,md)
       i = i + 1
 
@@ -434,7 +434,11 @@ implicit none
             dcscoms, ec,ecslj,ecsel,ecs,esslj,essel,essb,ess, totalPotEnergy,totalKinEnergy,&
             totalEnergy, totalp
          write(unit2,'(i10,24f12.6)') i, get_apparent_rAH(p), (p%h(j,j),j=1,nMapStates),&
-            ((p%rm(j)**2+p%pm(j)**2-hbar)/(2d0*hbar),j=1,nMapStates)
+            ((p%rm(j)**2+p%pm(j)**2-hbar)/(2d0*hbar),j=1,nMapStates),&
+            (p%pm(j),j=1,nMapStates), (p%rm(j),j=1,nMapStates), &
+            (p%pm(1)-p%rm(1))*(p%h(1,1)+p%h(1,2)+p%h(1,3)),&
+            (p%pm(2)-p%rm(2))*(p%h(2,1)+p%h(2,2)+p%h(2,3)),&
+            (p%pm(3)-p%rm(3))*(p%h(3,1)+p%h(3,2)+p%h(3,3))
          !write(999,'(i10,24f12.6)') i, (force%inAtom(j)%total,j=1,nAtoms)
          !write(888,'(i10,24f12.6)') i, (atomPairs(3,j)%rij,j=1,nAtoms)
       end if
@@ -570,7 +574,7 @@ implicit none
          p%pm(j) = p%pm(j) - (hdt/hbar)*p%h(j,i)*p%rm(i)
       end do
    end do 
-   
+
    call do_shake(cluster,atomPairs,mdspecs)
    call get_distances_and_vectors(cluster,atomPairs)
    call get_H_grid_Atoms_pos_and_vec(p%gridHSolvent,atomPairs)
