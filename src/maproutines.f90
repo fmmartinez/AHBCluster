@@ -3,6 +3,28 @@ use definitions
 
 contains
 
+subroutine rescale_mapping_variables(p)
+implicit none
+   type(QuantumStateData),intent(inout) :: p
+   
+   integer :: i, nMap
+   real(8) :: total, scaleFactor
+   
+   nMap = size(p%rm)
+
+   total = 0d0
+   do i = 1, nMap
+      total = total + (p%rm(i)**2 + p%pm(i)**2)
+   end do
+
+   scaleFactor = sqrt(4d0*hbar/total)
+
+   do i = 1, nMap
+      p%rm(i) = scaleFactor*p%rm(i)
+      p%pm(i) = scaleFactor*p%pm(i)
+   end do
+end subroutine rescale_mapping_variables
+
 subroutine do_mapping_variables_sampling_box_muller(stream,p)
 use mkl_vsl_type
 use mkl_vsl
@@ -37,7 +59,8 @@ implicit none
    allocate(angles(1:nMap))
 
    errcode = vdrnguniform(method1,stream,nMap,angles,0d0,2d0*pi)
-
+   
+   angles = (45d0/180d0)*pi
    if (nMap == 1) then
       p%rm(1) = sqrt(3d0*hbar)*cos(angles(1))
       p%pm(1) = sqrt(3d0*hbar)*sin(angles(1))
@@ -52,7 +75,6 @@ implicit none
          end if
       end do
    end if
-
    
    !limit = sqrt(hbar)
 
