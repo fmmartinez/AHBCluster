@@ -6,13 +6,13 @@ use mkl_vsl
 implicit none
 
 !<--integration parameters
-integer,parameter :: nPointsGrid = 40
+integer,parameter :: nPointsGrid = 100
 real(8),parameter :: lowerLimit = 0.1d0, upperLimit = 2.4d0
 real(8),parameter :: binWidth = (upperLimit-lowerLimit)/nPointsGrid
-real(8),parameter :: covMinWell = 1.0d0, ionMinWell = 1.6d0
+real(8),parameter :: covMinWell = 0.95d0, ionMinWell = 1.73d0
 real(8),parameter :: alpha0 = 7.735d0
-real(8),parameter :: alphaCov = 9.26d0
-real(8),parameter :: alphaIon = 11.42d0
+real(8),parameter :: alphaCov = alpha0 !9.26d0
+real(8),parameter :: alphaIon = alpha0 !11.42d0
 !-->
 
 integer,parameter :: brng = VSL_BRNG_MT2203
@@ -100,6 +100,8 @@ end type VectorForMatrix
 
 type QuantumStateData
    real(8) :: hTraceN
+   !prototype
+   real(8),dimension(1:2) :: occupation, phaseAng
    real(8),dimension(:),allocatable :: eigenvalues,rm,pm
    real(8),dimension(:),allocatable :: q1,p1,q2,p2
    real(8),dimension(:,:),allocatable :: phiKphi, phiVsphi, SMatrix
