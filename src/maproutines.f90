@@ -157,6 +157,27 @@ implicit none
    end do
 end subroutine get_mapFactor
 
+subroutine get_radFactor(pbme)
+implicit none
+   type(QuantumStateData),intent(inout) :: pbme
+   integer :: i,j,nm
+
+   nm = size(pbme%rm)
+
+   pbme%mapFactor = 0d0
+   do i = 1, nm
+      pbme%mapFactor(i,i) = pbme%occupation(i)
+   end do
+   
+   do i = 1, nm-1
+      do j = i+1, nm
+         pbme%mapFactor(i,j) = 0.5d0*sqrt(2d0*pbme%occupation(i)+1)* &
+            sqrt(2d0*pbme%occupation(j)+1)*cos(pbme%phaseAng(1)-pbme%phaseAng(2))
+         pbme%mapFactor(j,i) = pbme%mapFactor(i,j)
+      end do
+   end do
+end subroutine get_radFactor
+
 subroutine get_mapFactor_traceless(pbme)
 implicit none
    type(QuantumStateData),intent(inout) :: pbme
@@ -239,6 +260,12 @@ implicit none
          q(i,j) = get_lambda_f_lambda_matrix_element(li,lj,pbme%prAHp)
       end do
    end do
+
+   print '(12f12.8)', q
+   print *, '-'
+   print '(12f12.8)', pbme%prAHp
+   !print '(12f12.8)', pbme%mapFactor
+   stop
 
    aqA = get_map_contribution(q,pbme%mapFactor)
 end function get_apparent_rAH
