@@ -137,6 +137,8 @@ call get_phi_Vsubsystem_phi_matrix(quantum%phi,atomPairs_initial(1,2)%rij,quantu
 HMatrix = quantum%phiKphi + quantum%phiVsphi
 call get_subsystem_lambdas(HMatrix,quantum%SMatrix,allEigenVec,allEigenVal)
 
+print '(12f12.8)', allEigenVal
+
 open (newunit=unit1,file='lambdas.log')
 do i = 1, nPointsGrid
    do j = 1, nBasisFun
@@ -177,12 +179,6 @@ else if (nMapStates == 1) then
       stop 'error, selected state not in range of  nMapStates'
 end if
 
-!open (newunit=unit1,file='h.log')
-!do i = 1, nPointsGrid
-!   
-!end do
-!close(unit1)
-
 !call update_charges_in_complex_and_pairs(cluster_initial,atomPairs_initial)
 call get_phi_charge_AB_phi_matrix(quantum)
    !previous subroutine called only once, no need to update
@@ -204,6 +200,8 @@ call get_phi_rAH_phi_matrix(quantum)
 
 quantum_initial = quantum
 
+print '(12f12.8)', get_apparent_rAH(quantum)
+
 do i = 1, md%nTrajectories
    cluster = cluster_initial
    atomPairs = atomPairs_initial
@@ -221,16 +219,34 @@ do i = 1, md%nTrajectories
       quantum%p2 = 0d0
       quantum%q2 = 0d0
       quantum%mapFactor2 = 0d0
-   else
+   elseif (md%appMethod == 2) then
       call do_coherent_state_variables_sampling(stream,quantum)
       call get_covarFactor(quantum)
       quantum%rm = 0d0
       quantum%pm = 0d0
       quantum%mapFactor = 0d0
+   else
+      !this are prototype numbers (starting in ionic well) for two state system
+      quantum%occupation(1) = 0d0
+      quantum%occupation(2) = 1d0
+      call random_number(quantum%phaseAng(1))
+      quantum%phaseAng(1) = 2d0*pi*quantum%phaseAng(1)
+      call random_number(quantum%phaseAng(2))
+      quantum%phaseAng(2) = 2d0*pi*quantum%phaseAng(2)
+      quantum%rm = 0d0
+      quantum%pm = 0d0
+      quantum%mapFactor = 0d0
+      quantum%p1 = 0d0
+      quantum%q1 = 0d0
+      quantum%mapFactor1 = 0d0
+      quantum%p2 = 0d0
+      quantum%q2 = 0d0
+      quantum%mapFactor2 = 0d0
+      call get_radFactor(quantum)
    end if
-      
+   
    !forces
-   if (md%appMethod == 1) then
+   if ((md%appMethod == 1).or.(md%appMethod == 3)) then
       call get_all_forces_pbme(cluster_initial,atomPairs_initial,quantum,force,forceCCoM)
    else
       call get_all_forces_fbts(cluster_initial,atomPairs_initial,quantum,force,forceCCoM)
@@ -245,8 +261,10 @@ do i = 1, md%nTrajectories
       else
          call run_thermal_equilibration_pbme(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i)
       end if
+   elseif (md%appMethod == 2) then
+      call run_thermal_equilibration_fbts(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i)
    else
-      call run_thermal_equilibration_fbts(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i) 
+      call run_thermal_equilibration_pbmeRad(cluster,atomPairs,quantum,force,forceCCoM,md,stream,i)
    end if
    print *, 'equilibration end'
    
